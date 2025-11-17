@@ -1,0 +1,14 @@
+# Arquivo de configuração com chaves de API
+config.js
+
+# Dependências
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+

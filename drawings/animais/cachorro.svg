@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Cabeça -->
+  <circle cx="100" cy="70" r="35" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Orelhas -->
+  <ellipse cx="80" cy="55" rx="12" ry="20" fill="transparent" stroke="#000" stroke-width="2"/>
+  <ellipse cx="120" cy="55" rx="12" ry="20" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Olhos -->
+  <circle cx="92" cy="65" r="4" fill="transparent" stroke="#000" stroke-width="2"/>
+  <circle cx="108" cy="65" r="4" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Nariz -->
+  <ellipse cx="100" cy="78" rx="5" ry="4" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Boca -->
+  <path d="M 100 82 Q 90 90 85 88" fill="transparent" stroke="#000" stroke-width="2"/>
+  <path d="M 100 82 Q 110 90 115 88" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Corpo -->
+  <ellipse cx="100" cy="135" rx="40" ry="50" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Patas -->
+  <ellipse cx="70" cy="160" rx="10" ry="18" fill="transparent" stroke="#000" stroke-width="2"/>
+  <ellipse cx="130" cy="160" rx="10" ry="18" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Rabo -->
+  <ellipse cx="140" cy="110" rx="8" ry="25" fill="transparent" stroke="#000" stroke-width="2"/>
+</svg>
+

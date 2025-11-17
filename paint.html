@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorir - Pintar</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body class="paint-page">
+    <div class="paint-container">
+        <aside class="color-palette">
+            <header>
+                <a href="#" id="back-link" class="back-link">← Voltar</a>
+                <h2>Cores</h2>
+            </header>
+            <div id="color-grid" class="color-grid">
+                <!-- Cores serão carregadas aqui -->
+            </div>
+        </aside>
+        <main class="drawing-area">
+            <div id="canvas-container" class="canvas-container">
+                <!-- Canvas será criado aqui -->
+            </div>
+        </main>
+    </div>
+    <script src="js/painter.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Cabeça -->
+  <circle cx="100" cy="80" r="40" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Orelhas -->
+  <polygon points="75,50 85,30 95,50" fill="transparent" stroke="#000" stroke-width="2"/>
+  <polygon points="105,50 115,30 125,50" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Olhos -->
+  <circle cx="90" cy="75" r="5" fill="transparent" stroke="#000" stroke-width="2"/>
+  <circle cx="110" cy="75" r="5" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Nariz -->
+  <polygon points="100,85 95,95 105,95" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Boca -->
+  <path d="M 100 95 Q 90 100 85 95" fill="transparent" stroke="#000" stroke-width="2"/>
+  <path d="M 100 95 Q 110 100 115 95" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Corpo -->
+  <ellipse cx="100" cy="140" rx="35" ry="45" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Patas -->
+  <ellipse cx="75" cy="160" rx="8" ry="15" fill="transparent" stroke="#000" stroke-width="2"/>
+  <ellipse cx="125" cy="160" rx="8" ry="15" fill="transparent" stroke="#000" stroke-width="2"/>
+  <!-- Rabo -->
+  <path d="M 135 120 Q 160 100 170 130" fill="transparent" stroke="#000" stroke-width="2"/>
+</svg>
+
