@@ -27,7 +27,16 @@ app.use('/api', apiRoutes);
 app.use('/', staticRoutes);
 
 // Servir arquivos estáticos da pasta public
-app.use(express.static(PUBLIC_DIR));
+// Adicionar headers para evitar cache de arquivos JavaScript em desenvolvimento
+app.use(express.static(PUBLIC_DIR, {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 
 // Iniciar servidor
 app.listen(PORT, () => {
