@@ -25,23 +25,31 @@ app.use('/api', apiRoutes);
 
 // Servir arquivos estáticos da pasta public (ANTES das rotas HTML)
 // Isso garante que CSS, JS, imagens sejam servidos corretamente
-// Usar caminho absoluto para garantir que funcione no Vercel
+// No Vercel, garantir que o caminho está correto
+const fs = require('fs');
+const path = require('path');
+
+// Verificar se o diretório existe e logar para debug
+console.log('📁 PUBLIC_DIR:', PUBLIC_DIR);
+console.log('📁 PUBLIC_DIR existe?', fs.existsSync(PUBLIC_DIR));
+
+if (fs.existsSync(PUBLIC_DIR)) {
+    const files = fs.readdirSync(PUBLIC_DIR);
+    console.log('📁 Arquivos em public:', files.slice(0, 5).join(', '), '...');
+}
+
 const staticOptions = {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.js')) {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
+            res.setHeader('Content-Type', 'application/javascript');
         } else if (filePath.endsWith('.css')) {
             res.setHeader('Content-Type', 'text/css');
         }
     }
 };
-
-// Log para debug (apenas em desenvolvimento)
-if (process.env.NODE_ENV !== 'production') {
-    console.log('📁 Servindo arquivos estáticos de:', PUBLIC_DIR);
-}
 
 app.use(express.static(PUBLIC_DIR, staticOptions));
 
