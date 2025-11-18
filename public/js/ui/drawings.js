@@ -1,6 +1,6 @@
 // UI - Renderização de desenhos de uma categoria
 
-import { getCategoryData, getDrawingsInCategory } from '../services/drawingsService.js';
+import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl } from '../services/drawingsService.js';
 import { getCategoryFromUrl, getPaintUrl } from '../utils/urlUtils.js';
 
 /**
@@ -44,14 +44,26 @@ export async function loadDrawings() {
         grid.innerHTML = '';
 
         drawings.forEach(drawing => {
+            const filename = getDrawingFilename(drawing);
+            const imageUrl = getDrawingUrl(drawing);
+            
+            // Obter URL ou caminho da imagem
+            let thumbnailPath;
+            if (imageUrl) {
+                // Usar URL do S3
+                thumbnailPath = imageUrl;
+            } else {
+                // Usar caminho relativo (filesystem)
+                thumbnailPath = `drawings/${category}/${filename}`;
+            }
+            
+            const drawingName = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
+
             const drawingCard = document.createElement('div');
             drawingCard.className = 'drawing-card';
             drawingCard.onclick = () => {
-                window.location.href = getPaintUrl(category, drawing);
+                window.location.href = getPaintUrl(category, filename, imageUrl);
             };
-
-            const thumbnailPath = `drawings/${category}/${drawing}`;
-            const drawingName = drawing.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
 
             drawingCard.innerHTML = `
                 <img src="${thumbnailPath}" alt="${drawingName}" class="drawing-thumbnail"

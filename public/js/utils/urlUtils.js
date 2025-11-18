@@ -43,9 +43,23 @@ export function getCategoryUrl(categoryName) {
  * Cria uma URL para um desenho na página de pintura
  * @param {string} categoryName - Nome da categoria
  * @param {string} drawingName - Nome do desenho
+ * @param {string|null} imageUrl - URL completa da imagem (opcional, para S3)
  * @returns {string} URL formatada
  */
-export function getPaintUrl(categoryName, drawingName) {
-    return `/paint?cat=${encodeURIComponent(categoryName)}&drawing=${encodeURIComponent(drawingName)}`;
+export function getPaintUrl(categoryName, drawingName, imageUrl = null) {
+    let url = `/paint?cat=${encodeURIComponent(categoryName)}&drawing=${encodeURIComponent(drawingName)}`;
+    if (imageUrl) {
+        url += `&url=${encodeURIComponent(imageUrl)}`;
+    }
+    return url;
+}
+
+/**
+ * Obtém a URL completa da imagem da URL atual (se fornecida)
+ * @returns {string|null} URL completa da imagem ou null se não existir
+ */
+export function getImageUrlFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('url');
 }
 

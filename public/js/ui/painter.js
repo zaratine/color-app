@@ -1,6 +1,6 @@
 // UI - Lógica de pintura/preenchimento para imagens PNG usando Canvas
 
-import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl } from '../utils/urlUtils.js';
+import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl } from '../utils/urlUtils.js';
 
 // Paleta de 24 cores para crianças
 const COLOR_PALETTE = [
@@ -262,12 +262,36 @@ function loadImage() {
     if (!category || !drawing) {
         const container = document.getElementById('canvas-container');
         if (container) {
-            container.innerHTML = '<p>Erro: Categoria ou desenho não especificado.</p>';
+            // Preservar o botão de download antes de limpar o container
+            const downloadLink = container.querySelector('#download-link');
+            const downloadLinkClone = downloadLink ? downloadLink.cloneNode(true) : null;
+            
+            // Remover todos os elementos exceto o botão de download
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            
+            // Recolocar o botão de download se existir
+            if (downloadLinkClone) {
+                container.appendChild(downloadLinkClone);
+                // Reatachar o event listener
+                downloadLinkClone.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    downloadImage();
+                });
+            }
+            
+            const errorMsg = document.createElement('p');
+            errorMsg.textContent = 'Erro: Categoria ou desenho não especificado.';
+            container.appendChild(errorMsg);
         }
         return;
     }
 
-    const imagePath = `drawings/${category}/${drawing}`;
+    // Verificar se há URL completa (S3) ou usar caminho local
+    const imageUrlFromParams = getImageUrlFromUrl();
+    const imagePath = imageUrlFromParams || `drawings/${category}/${drawing}`;
+    
     container = document.getElementById('canvas-container');
     
     // Criar canvas
@@ -286,8 +310,25 @@ function loadImage() {
         // Desenhar imagem no canvas com tamanho original
         ctx.drawImage(image, 0, 0);
         
-        // Adicionar canvas ao container primeiro
-        container.innerHTML = '';
+        // Preservar o botão de download antes de limpar o container
+        const downloadLink = container.querySelector('#download-link');
+        const downloadLinkClone = downloadLink ? downloadLink.cloneNode(true) : null;
+        
+        // Remover todos os elementos do container
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        
+        // Recolocar o botão de download se existir
+        if (downloadLinkClone) {
+            container.appendChild(downloadLinkClone);
+            // Reatachar o event listener
+            downloadLinkClone.addEventListener('click', (e) => {
+                e.preventDefault();
+                downloadImage();
+            });
+        }
+        
         container.appendChild(canvas);
         
         // Adicionar event listener para clique
@@ -346,7 +387,28 @@ function loadImage() {
     };
     
     image.onerror = function() {
-        container.innerHTML = '<p>Erro ao carregar a imagem. Verifique se o arquivo existe.</p>';
+        // Preservar o botão de download antes de limpar o container
+        const downloadLink = container.querySelector('#download-link');
+        const downloadLinkClone = downloadLink ? downloadLink.cloneNode(true) : null;
+        
+        // Remover todos os elementos exceto o botão de download
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        
+        // Recolocar o botão de download se existir
+        if (downloadLinkClone) {
+            container.appendChild(downloadLinkClone);
+            // Reatachar o event listener
+            downloadLinkClone.addEventListener('click', (e) => {
+                e.preventDefault();
+                downloadImage();
+            });
+        }
+        
+        const errorMsg = document.createElement('p');
+        errorMsg.textContent = 'Erro ao carregar a imagem. Verifique se o arquivo existe.';
+        container.appendChild(errorMsg);
     };
     
     image.src = imagePath;
@@ -381,11 +443,53 @@ function updateBackLink() {
     }
 }
 
+// Função para fazer download da imagem
+function downloadImage() {
+    if (!canvas) return;
+    
+    // Converter canvas para blob
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        
+        // Criar URL temporária
+        const url = URL.createObjectURL(blob);
+        
+        // Obter nome do arquivo da URL
+        const category = getCategoryFromUrl();
+        const drawing = getDrawingFromUrl();
+        const fileName = drawing ? drawing.replace(/\.[^/.]+$/, '') : 'desenho';
+        const extension = drawing ? drawing.split('.').pop() : 'png';
+        
+        // Criar link de download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `${fileName}_colorido.${extension}`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Limpar URL temporária
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    }, 'image/png');
+}
+
+// Função para inicializar o botão de download
+function initDownloadButton() {
+    const downloadLink = document.getElementById('download-link');
+    if (downloadLink) {
+        downloadLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            downloadImage();
+        });
+    }
+}
+
 // Inicializar quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('color-grid') && document.getElementById('canvas-container')) {
         updateBackLink();
         initColorPalette();
+        initDownloadButton();
         loadImage();
         
         // Ajustar tamanho quando a janela for redimensionada

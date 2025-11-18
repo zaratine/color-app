@@ -31,7 +31,17 @@ export async function loadCategories() {
 
         for (const category of categoriesWithDrawings) {
             const firstDrawing = category.drawings[0];
-            const thumbnailPath = `drawings/${category.name}/${firstDrawing}`;
+            
+            // Obter URL ou caminho da imagem
+            let thumbnailPath;
+            if (typeof firstDrawing === 'object' && firstDrawing.url) {
+                // Usar URL do S3
+                thumbnailPath = firstDrawing.url;
+            } else {
+                // Usar caminho relativo (filesystem)
+                const filename = typeof firstDrawing === 'string' ? firstDrawing : firstDrawing.filename;
+                thumbnailPath = `drawings/${category.name}/${filename}`;
+            }
 
             const categoryCard = document.createElement('div');
             categoryCard.className = 'category-card';

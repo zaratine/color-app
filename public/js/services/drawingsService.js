@@ -54,7 +54,7 @@ export async function getDrawingsDatabase() {
 /**
  * Obtém lista de desenhos em uma categoria específica
  * @param {string} categoryName - Nome da categoria
- * @returns {Promise<Array>} Array com os nomes dos arquivos de desenho
+ * @returns {Promise<Array>} Array com os desenhos (pode ser strings ou objetos {filename, url})
  */
 export async function getDrawingsInCategory(categoryName) {
     const database = await getDrawingsDatabase();
@@ -63,6 +63,30 @@ export async function getDrawingsInCategory(categoryName) {
         return database[categoryName].drawings || [];
     }
     return [];
+}
+
+/**
+ * Obtém o nome do arquivo de um desenho (suporta string ou objeto)
+ * @param {string|Object} drawing - Desenho (string ou objeto {filename, url})
+ * @returns {string} Nome do arquivo
+ */
+export function getDrawingFilename(drawing) {
+    if (typeof drawing === 'string') {
+        return drawing;
+    }
+    return drawing.filename || drawing;
+}
+
+/**
+ * Obtém a URL de um desenho (retorna URL do S3 se disponível, senão retorna null)
+ * @param {string|Object} drawing - Desenho (string ou objeto {filename, url})
+ * @returns {string|null} URL do desenho ou null se não houver
+ */
+export function getDrawingUrl(drawing) {
+    if (typeof drawing === 'object' && drawing.url) {
+        return drawing.url;
+    }
+    return null;
 }
 
 /**
@@ -77,14 +101,15 @@ export async function getCategoryData(categoryName) {
 
 /**
  * Obtém todas as categorias disponíveis
- * @returns {Promise<Array>} Array de objetos {name, displayName, drawings}
+ * @returns {Promise<Array>} Array de objetos {name, displayName, drawings, source}
  */
 export async function getAllCategories() {
     const database = await getDrawingsDatabase();
     return Object.entries(database).map(([name, data]) => ({
         name,
         displayName: data.displayName,
-        drawings: data.drawings || []
+        drawings: data.drawings || [],
+        source: data.source || 'filesystem'
     }));
 }
 

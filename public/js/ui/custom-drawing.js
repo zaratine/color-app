@@ -75,7 +75,8 @@ function initCustomDrawingForm() {
             
             // Aguardar um pouco antes de redirecionar
             setTimeout(() => {
-                window.location.href = getPaintUrl('customizados', data.filename);
+                // Usar URL do S3 se disponível, caso contrário usar caminho local
+                window.location.href = getPaintUrl('customizados', data.filename, data.url || null);
             }, 1500);
 
         } catch (error) {

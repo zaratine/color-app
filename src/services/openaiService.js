@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { openai, CUSTOM_DIR, apiKey } = require('../config');
 const { generateFilename } = require('../utils/fileUtils');
+const { uploadToS3, isS3Available } = require('./s3Service');
 
 // Prompt para geração de desenho
 const DRAWING_PROMPT = `You are an illustration model that generates kids' coloring pages.
@@ -112,12 +113,13 @@ async function generateDrawing(theme) {
         
         console.log('    [generateDrawing] Chamando OpenAI API...');
         const response = await openai.images.generate({
-            model: 'gpt-image-1',
+            //model: 'gpt-image-1',
+            model: 'dall-e-3',
             prompt: prompt,
-            output_format: 'png'
+            //output_format: 'png' //apenas para o modelo gpt-image-1
             //size: '1792x1024', // Aspect ratio 16:9 (aproximado)
             //quality: 'standard',
-            //response_format: 'url' // Não suportado pelo modelo gpt-image-1-mini
+            response_format: 'url' // Não suportado pelo modelo gpt-image-1-mini
         });
 
         console.log('    [generateDrawing] Resposta da OpenAI recebida');
@@ -129,32 +131,63 @@ async function generateDrawing(theme) {
         const imageBuffer = await downloadImage(imageUrl);
         console.log('    [generateDrawing] Imagem baixada (tamanho:', imageBuffer.length, 'bytes)');
         
-        // Gerar nome do arquivo e salvar
+        // Gerar nome do arquivo
         const filename = generateFilename(theme);
-        const filePath = path.join(CUSTOM_DIR, filename);
-        console.log('    [generateDrawing] Tentando salvar em:', filePath);
         
-        // Tentar salvar o arquivo (pode falhar em ambientes serverless como Vercel)
+        // Tentar fazer upload para S3 primeiro (se configurado)
+        if (isS3Available()) {
+            try {
+                console.log('    [generateDrawing] Tentando fazer upload para S3...');
+                const s3Url = await uploadToS3(imageBuffer, filename, 'image/png');
+                console.log('    [generateDrawing] Upload para S3 concluído com sucesso');
+                return {
+                    filename: filename,
+                    url: s3Url,
+                    storage: 's3'
+                };
+            } catch (error) {
+                console.error('    [generateDrawing] Erro ao fazer upload para S3:', error.message);
+                console.log('    [generateDrawing] Tentando fallback para salvamento local...');
+                // Continuar para tentar salvamento local como fallback
+            }
+        }
+        
+        // Fallback: tentar salvar localmente (apenas em desenvolvimento)
+        const filePath = path.join(CUSTOM_DIR, filename);
+        console.log('    [generateDrawing] Tentando salvar localmente em:', filePath);
+        
         try {
             // Verificar se o diretório existe antes de tentar escrever
             if (!fs.existsSync(CUSTOM_DIR)) {
                 fs.mkdirSync(CUSTOM_DIR, { recursive: true });
             }
             fs.writeFileSync(filePath, imageBuffer);
-            console.log('    [generateDrawing] Arquivo salvo com sucesso');
+            console.log('    [generateDrawing] Arquivo salvo localmente com sucesso');
+            
+            // Retornar apenas filename para compatibilidade com código existente
+            return {
+                filename: filename,
+                url: `/drawings/customizados/${filename}`,
+                storage: 'local'
+            };
         } catch (error) {
             // Em ambientes serverless (Vercel), o sistema de arquivos é read-only
-            // Retornamos o filename mesmo assim, mas o arquivo não será salvo permanentemente
             if (process.env.VERCEL || error.code === 'EROFS') {
-                console.log('    [generateDrawing] Ambiente serverless detectado. Arquivo não será salvo permanentemente.');
-                console.log('    [generateDrawing] A imagem foi gerada com sucesso, mas não pode ser persistida no sistema de arquivos.');
+                console.log('    [generateDrawing] Ambiente serverless detectado e S3 não configurado.');
+                console.log('    [generateDrawing] A imagem foi gerada com sucesso, mas não pode ser persistida.');
+                console.log('    [generateDrawing] Configure o S3 para salvar as imagens permanentemente.');
+                
+                // Retornar apenas o filename mesmo sem salvar (para não quebrar a API)
+                return {
+                    filename: filename,
+                    url: null,
+                    storage: 'none'
+                };
             } else {
                 console.error('    [generateDrawing] Erro ao salvar arquivo:', error.message);
                 throw error;
             }
         }
-        
-        return filename;
     } catch (error) {
         console.error('    [generateDrawing] Erro:', error.message);
         console.error('    [generateDrawing] Stack:', error.stack);
