@@ -1,13 +1,4 @@
-// Lógica principal e roteamento
-
-// Função para obter parâmetros da URL
-function getUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-        cat: params.get('cat'),
-        drawing: params.get('drawing')
-    };
-}
+// App - Inicialização e roteamento básico
 
 // Inicialização baseada na página atual
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,14 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Suportar rotas limpas (sem extensão) e rotas com extensão (compatibilidade)
     if (currentPage === '' || currentPage === 'index.html' || path === '/') {
-        // Página de categorias será inicializada por categories.js
+        // Página de categorias será inicializada por ui/categories.js
         return;
     } else if (currentPage === 'category' || currentPage === 'category.html') {
-        // Página de listagem será inicializada por drawings.js
+        // Página de listagem será inicializada por ui/drawings.js
         return;
     } else if (currentPage === 'paint' || currentPage === 'paint.html') {
-        // Página de pintura será inicializada por painter.js
+        // Página de pintura será inicializada por ui/painter.js
         return;
     }
 });
-

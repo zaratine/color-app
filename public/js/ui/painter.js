@@ -1,4 +1,6 @@
-// Lógica de pintura/preenchimento para imagens PNG usando Canvas
+// UI - Lógica de pintura/preenchimento para imagens PNG usando Canvas
+
+import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl } from '../utils/urlUtils.js';
 
 // Paleta de 24 cores para crianças
 const COLOR_PALETTE = [
@@ -170,10 +172,6 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
         return;
     }
     
-    // Se o ponto inicial é branco ou muito claro (fundo), não preencher
-    // Mas permitir preencher se o usuário realmente quer pintar o fundo
-    // Vamos permitir, mas com uma verificação mais inteligente
-    
     // Usar fila para flood fill (mais eficiente que recursão)
     const queue = [[x, y]];
     const visited = new Set();
@@ -258,13 +256,14 @@ function resizeCanvas() {
 
 // Função para carregar e renderizar a imagem PNG
 function loadImage() {
-    const params = new URLSearchParams(window.location.search);
-    const category = params.get('cat');
-    const drawing = params.get('drawing');
+    const category = getCategoryFromUrl();
+    const drawing = getDrawingFromUrl();
 
     if (!category || !drawing) {
-        document.getElementById('canvas-container').innerHTML = 
-            '<p>Erro: Categoria ou desenho não especificado.</p>';
+        const container = document.getElementById('canvas-container');
+        if (container) {
+            container.innerHTML = '<p>Erro: Categoria ou desenho não especificado.</p>';
+        }
         return;
     }
 
@@ -372,12 +371,11 @@ function handleCanvasClick(e) {
 
 // Função para atualizar link de voltar
 function updateBackLink() {
-    const params = new URLSearchParams(window.location.search);
-    const category = params.get('cat');
+    const category = getCategoryFromUrl();
     const backLink = document.getElementById('back-link');
     
     if (backLink && category) {
-        backLink.href = `/category?cat=${encodeURIComponent(category)}`;
+        backLink.href = getCategoryUrl(category);
     } else if (backLink) {
         backLink.href = '/category';
     }
@@ -402,3 +400,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+

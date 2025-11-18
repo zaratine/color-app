@@ -70,7 +70,13 @@ Para usar a funcionalidade de geração de desenhos customizados, você precisa 
 Use o servidor Node.js incluído no projeto:
 
 ```bash
-node server.js
+npm start
+```
+
+Ou diretamente:
+
+```bash
+node src/server.js
 ```
 
 O servidor irá:
@@ -93,7 +99,7 @@ Não é necessário rodar nenhum script ou reiniciar o servidor. O sistema lê d
 
 ### Usar o Site
 
-1. Inicie o servidor com `node server.js`
+1. Inicie o servidor com `npm start` ou `node src/server.js`
 2. Abra `http://localhost:8000` no navegador
 3. **Gerar desenho customizado (novo!):**
    - Digite o que você quer pintar no campo de texto (ex: "um gato", "uma princesa", "um carro")
@@ -109,4 +115,58 @@ Não é necessário rodar nenhum script ou reiniciar o servidor. O sistema lê d
 ### Desenhos Customizados
 
 Os desenhos gerados pela IA são salvos automaticamente na pasta `drawings/customizados/` e podem ser acessados novamente através da categoria "Customizados" (se ela aparecer na listagem).
+
+## Deploy no Vercel
+
+Este projeto está configurado para deploy automático no Vercel com integração ao GitHub.
+
+### Pré-requisitos
+
+1. Conta no [Vercel](https://vercel.com) (pode usar sua conta GitHub)
+2. Repositório no GitHub com o código do projeto
+
+### Passo a Passo
+
+#### 1. Conectar Repositório ao Vercel
+
+1. Acesse [vercel.com](https://vercel.com) e faça login com GitHub
+2. Clique em **"Add New Project"** ou **"Import Project"**
+3. Selecione o repositório do GitHub que contém este projeto
+4. O Vercel detectará automaticamente as configurações do `vercel.json`
+
+#### 2. Configurar Variáveis de Ambiente
+
+No painel do Vercel, vá em **Settings > Environment Variables** e adicione:
+
+- **`OPENAI_API_KEY`**: Sua chave da API da OpenAI
+  - Obtenha em: https://platform.openai.com/api-keys
+  - **Importante**: Esta variável é necessária para a funcionalidade de gerar desenhos customizados
+
+**Nota**: A variável `PORT` não precisa ser configurada - o Vercel define automaticamente.
+
+#### 3. Deploy
+
+1. Após configurar as variáveis de ambiente, clique em **"Deploy"**
+2. O Vercel fará o build e deploy automaticamente
+3. Você receberá uma URL do tipo: `https://seu-projeto.vercel.app`
+
+#### 4. Deploy Automático
+
+Após a primeira configuração:
+- **Cada push para a branch `main`** (ou a branch configurada) fará deploy automático
+- **Pull Requests** geram previews de deploy automaticamente
+- Você pode ver o status dos deploys no painel do Vercel
+
+### Configuração Local vs Produção
+
+- **Local**: Use o arquivo `config.js` (copie de `config.example.js` e adicione suas chaves)
+- **Produção (Vercel)**: Use variáveis de ambiente no painel do Vercel (mais seguro)
+
+O código está configurado para priorizar variáveis de ambiente sobre o arquivo `config.js`, então funcionará corretamente em ambos os ambientes.
+
+### Troubleshooting
+
+- **Erro de build**: Verifique se todas as dependências estão no `package.json`
+- **API não funciona**: Verifique se a variável `OPENAI_API_KEY` está configurada no Vercel
+- **Arquivos estáticos não carregam**: Verifique se a pasta `public/` está sendo servida corretamente
 
