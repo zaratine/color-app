@@ -13,12 +13,16 @@ export async function loadCategories() {
     grid.innerHTML = '<p>Carregando categorias...</p>';
 
     try {
+        console.log('📋 Carregando categorias...');
         const categories = await getAllCategories();
+        console.log('📋 Categorias recebidas:', categories);
         
         // Filtrar categorias que têm desenhos
         const categoriesWithDrawings = categories.filter(cat => cat.drawings.length > 0);
+        console.log('📋 Categorias com desenhos:', categoriesWithDrawings.length);
         
         if (categoriesWithDrawings.length === 0) {
+            console.warn('📋 Nenhuma categoria com desenhos encontrada');
             grid.innerHTML = '<p>Nenhuma categoria encontrada. Verifique se o servidor está rodando.</p>';
             return;
         }
@@ -51,8 +55,13 @@ export async function loadCategories() {
 
 // Inicializar quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('categories-grid')) {
+    console.log('📋 categories.js: DOMContentLoaded disparado');
+    const grid = document.getElementById('categories-grid');
+    if (grid) {
+        console.log('📋 categories.js: Grid encontrado, carregando categorias...');
         loadCategories();
+    } else {
+        console.warn('📋 categories.js: Grid não encontrado!');
     }
 });
 
