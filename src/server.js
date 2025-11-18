@@ -23,40 +23,12 @@ app.use('/api', corsMiddleware);
 // Rotas da API (antes do static para ter prioridade)
 app.use('/api', apiRoutes);
 
-// Middleware para logar requisições de arquivos estáticos (debug)
-app.use((req, res, next) => {
-    // Logar apenas requisições para arquivos estáticos
-    if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
-        console.log(`📄 Requisição para arquivo estático: ${req.method} ${req.path}`);
-    }
-    next();
-});
-
-// Servir arquivos estáticos da pasta public (ANTES das rotas HTML)
-// Isso garante que CSS, JS, imagens sejam servidos corretamente
-const staticOptions = {
-    setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.js')) {
-            // Headers para evitar cache e garantir tipo correto
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-            // Content-Type correto para módulos ES6
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-        } else if (filePath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css; charset=utf-8');
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-        }
-    },
-    // Fallthrough: se o arquivo não existir, passar para o próximo middleware
-    fallthrough: true,
-    // Index: não listar diretórios
-    index: false
-};
-
-// Logar informações sobre o diretório público
+// Middleware customizado para servir arquivos estáticos como raw files
+// Isso garante que arquivos JS não sejam transpilados pelo Vercel
 const fs = require('fs');
 const path = require('path');
+
+// Logar informações sobre o diretório público
 console.log('📁 Configuração de arquivos estáticos:');
 console.log('  PUBLIC_DIR:', PUBLIC_DIR);
 console.log('  PUBLIC_DIR existe?', fs.existsSync(PUBLIC_DIR));
@@ -76,6 +48,73 @@ if (fs.existsSync(PUBLIC_DIR)) {
         console.error('  Erro ao ler public:', error.message);
     }
 }
+
+// Middleware para servir arquivos estáticos diretamente do filesystem
+// Isso evita qualquer processamento/transpilação pelo Vercel
+app.use((req, res, next) => {
+    // Verificar se é um arquivo estático
+    const staticExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.json'];
+    const isStaticFile = staticExtensions.some(ext => req.path.endsWith(ext));
+    
+    if (isStaticFile) {
+        const filePath = path.join(PUBLIC_DIR, req.path);
+        
+        // Verificar se o arquivo existe
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+            console.log(`📄 Servindo arquivo estático: ${req.path}`);
+            
+            // Ler arquivo diretamente do filesystem (raw, sem processamento)
+            const fileContent = fs.readFileSync(filePath);
+            
+            // Determinar Content-Type
+            let contentType = 'application/octet-stream';
+            if (req.path.endsWith('.js')) {
+                contentType = 'application/javascript; charset=utf-8';
+            } else if (req.path.endsWith('.css')) {
+                contentType = 'text/css; charset=utf-8';
+            } else if (req.path.endsWith('.json')) {
+                contentType = 'application/json; charset=utf-8';
+            } else if (req.path.endsWith('.svg')) {
+                contentType = 'image/svg+xml';
+            } else if (req.path.endsWith('.png')) {
+                contentType = 'image/png';
+            } else if (req.path.endsWith('.jpg') || req.path.endsWith('.jpeg')) {
+                contentType = 'image/jpeg';
+            } else if (req.path.endsWith('.gif')) {
+                contentType = 'image/gif';
+            } else if (req.path.endsWith('.ico')) {
+                contentType = 'image/x-icon';
+            }
+            
+            // Headers para evitar cache e garantir tipo correto
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            
+            // Enviar arquivo
+            return res.send(fileContent);
+        }
+    }
+    
+    // Se não for arquivo estático ou não existir, passar para o próximo middleware
+    next();
+});
+
+// Usar express.static como fallback (para outros arquivos que não foram capturados acima)
+const staticOptions = {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        } else if (filePath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        }
+    },
+    fallthrough: true,
+    index: false
+};
 
 app.use(express.static(PUBLIC_DIR, staticOptions));
 
