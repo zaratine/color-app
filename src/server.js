@@ -23,11 +23,8 @@ app.use('/api', corsMiddleware);
 // Rotas da API (antes do static para ter prioridade)
 app.use('/api', apiRoutes);
 
-// Rotas estáticas (HTML pages)
-app.use('/', staticRoutes);
-
-// Servir arquivos estáticos da pasta public
-// Adicionar headers para evitar cache de arquivos JavaScript em desenvolvimento
+// Servir arquivos estáticos da pasta public (ANTES das rotas HTML)
+// Isso garante que CSS, JS, imagens sejam servidos corretamente
 app.use(express.static(PUBLIC_DIR, {
     setHeaders: (res, path) => {
         if (path.endsWith('.js')) {
@@ -37,6 +34,9 @@ app.use(express.static(PUBLIC_DIR, {
         }
     }
 }));
+
+// Rotas estáticas (HTML pages) - DEPOIS do static para não interceptar arquivos estáticos
+app.use('/', staticRoutes);
 
 // Iniciar servidor
 app.listen(PORT, () => {

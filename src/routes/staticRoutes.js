@@ -5,18 +5,34 @@ const { PUBLIC_DIR } = require('../config');
 
 const router = express.Router();
 
+// Função auxiliar para verificar se é um arquivo estático
+function isStaticFile(pathname) {
+    const staticExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.json', '.woff', '.woff2', '.ttf', '.eot'];
+    return staticExtensions.some(ext => pathname.endsWith(ext));
+}
+
 // Rota raiz
-router.get('/', (req, res) => {
+router.get('/', (req, res, next) => {
+    // Se for um arquivo estático, passar para o próximo middleware (express.static)
+    if (isStaticFile(req.path)) {
+        return next();
+    }
     res.sendFile(path.resolve(PUBLIC_DIR, 'index.html'));
 });
 
 // Rota paint
-router.get('/paint', (req, res) => {
+router.get('/paint', (req, res, next) => {
+    if (isStaticFile(req.path)) {
+        return next();
+    }
     res.sendFile(path.resolve(PUBLIC_DIR, 'paint.html'));
 });
 
 // Rota category
-router.get('/category', (req, res) => {
+router.get('/category', (req, res, next) => {
+    if (isStaticFile(req.path)) {
+        return next();
+    }
     res.sendFile(path.resolve(PUBLIC_DIR, 'category.html'));
 });
 
