@@ -164,9 +164,19 @@ Após a primeira configuração:
 
 O código está configurado para priorizar variáveis de ambiente sobre o arquivo `config.js`, então funcionará corretamente em ambos os ambientes.
 
+### Limitações no Vercel
+
+⚠️ **Desenhos Customizados**: No Vercel (ambiente serverless), o sistema de arquivos é read-only. Isso significa que:
+- Os desenhos customizados gerados pela IA **não serão salvos permanentemente**
+- A funcionalidade de gerar desenhos funcionará, mas eles não estarão disponíveis após a requisição
+- Para salvar desenhos permanentemente no Vercel, seria necessário usar um serviço de armazenamento externo (como AWS S3, Cloudinary, etc.)
+
+Os desenhos estáticos na pasta `public/drawings/` funcionam normalmente, pois são parte do código deployado.
+
 ### Troubleshooting
 
 - **Erro de build**: Verifique se todas as dependências estão no `package.json`
 - **API não funciona**: Verifique se a variável `OPENAI_API_KEY` está configurada no Vercel
 - **Arquivos estáticos não carregam**: Verifique se a pasta `public/` está sendo servida corretamente
+- **Erro EROFS (read-only file system)**: Este erro foi corrigido - o código agora detecta ambientes serverless e não tenta escrever no sistema de arquivos
 

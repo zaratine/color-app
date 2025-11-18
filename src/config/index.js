@@ -28,10 +28,21 @@ const openai = new OpenAI({
     apiKey: apiKey
 });
 
-// Garantir que a pasta customizados existe
-if (!fs.existsSync(CUSTOM_DIR)) {
-    fs.mkdirSync(CUSTOM_DIR, { recursive: true });
-    console.log('📁 Pasta customizados criada');
+// Garantir que a pasta customizados existe (apenas em ambientes com sistema de arquivos writable)
+// No Vercel/serverless, o sistema de arquivos é read-only, então pulamos essa operação
+try {
+    if (!fs.existsSync(CUSTOM_DIR)) {
+        fs.mkdirSync(CUSTOM_DIR, { recursive: true });
+        console.log('📁 Pasta customizados criada');
+    }
+} catch (error) {
+    // Em ambientes serverless (Vercel), o sistema de arquivos pode ser read-only
+    // Isso é esperado e não é um erro crítico
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+        console.log('ℹ️  Sistema de arquivos read-only detectado (ambiente serverless). Pasta customizados não será criada.');
+    } else {
+        console.warn('⚠️  Não foi possível criar a pasta customizados:', error.message);
+    }
 }
 
 module.exports = {

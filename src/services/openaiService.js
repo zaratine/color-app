@@ -132,10 +132,27 @@ async function generateDrawing(theme) {
         // Gerar nome do arquivo e salvar
         const filename = generateFilename(theme);
         const filePath = path.join(CUSTOM_DIR, filename);
-        console.log('    [generateDrawing] Salvando em:', filePath);
+        console.log('    [generateDrawing] Tentando salvar em:', filePath);
         
-        fs.writeFileSync(filePath, imageBuffer);
-        console.log('    [generateDrawing] Arquivo salvo com sucesso');
+        // Tentar salvar o arquivo (pode falhar em ambientes serverless como Vercel)
+        try {
+            // Verificar se o diretório existe antes de tentar escrever
+            if (!fs.existsSync(CUSTOM_DIR)) {
+                fs.mkdirSync(CUSTOM_DIR, { recursive: true });
+            }
+            fs.writeFileSync(filePath, imageBuffer);
+            console.log('    [generateDrawing] Arquivo salvo com sucesso');
+        } catch (error) {
+            // Em ambientes serverless (Vercel), o sistema de arquivos é read-only
+            // Retornamos o filename mesmo assim, mas o arquivo não será salvo permanentemente
+            if (process.env.VERCEL || error.code === 'EROFS') {
+                console.log('    [generateDrawing] Ambiente serverless detectado. Arquivo não será salvo permanentemente.');
+                console.log('    [generateDrawing] A imagem foi gerada com sucesso, mas não pode ser persistida no sistema de arquivos.');
+            } else {
+                console.error('    [generateDrawing] Erro ao salvar arquivo:', error.message);
+                throw error;
+            }
+        }
         
         return filename;
     } catch (error) {
