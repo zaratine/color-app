@@ -37,16 +37,21 @@ app.use((req, res, next) => {
 const staticOptions = {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.js')) {
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            // Headers para evitar cache e garantir tipo correto
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
-            res.setHeader('Content-Type', 'application/javascript');
+            // Content-Type correto para módulos ES6
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
         } else if (filePath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
         }
     },
     // Fallthrough: se o arquivo não existir, passar para o próximo middleware
-    fallthrough: true
+    fallthrough: true,
+    // Index: não listar diretórios
+    index: false
 };
 
 // Logar informações sobre o diretório público
