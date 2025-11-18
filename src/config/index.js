@@ -17,9 +17,42 @@ try {
 // Constantes de configuração
 // Prioridade: variável de ambiente > config.js > valor padrão
 const PORT = process.env.PORT || config.PORT || 8000;
-const DRAWINGS_DIR = path.resolve(__dirname, '..', '..', 'public', 'drawings');
-const CUSTOM_DIR = path.resolve(__dirname, '..', '..', 'public', 'drawings', 'customizados');
-const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
+
+// Resolver caminhos - no Vercel, pode ser necessário usar process.cwd()
+// Tentar múltiplos caminhos possíveis
+function resolvePublicDir() {
+    // Tentar caminho relativo ao __dirname primeiro
+    const dirnamePath = path.resolve(__dirname, '..', '..', 'public');
+    if (fs.existsSync(dirnamePath)) {
+        return dirnamePath;
+    }
+    
+    // Tentar caminho relativo ao process.cwd()
+    const cwdPath = path.resolve(process.cwd(), 'public');
+    if (fs.existsSync(cwdPath)) {
+        return cwdPath;
+    }
+    
+    // Tentar caminho absoluto no Vercel
+    const vercelPath = path.resolve('/var/task/public');
+    if (fs.existsSync(vercelPath)) {
+        return vercelPath;
+    }
+    
+    // Fallback para o caminho original
+    return dirnamePath;
+}
+
+const PUBLIC_DIR = resolvePublicDir();
+const DRAWINGS_DIR = path.join(PUBLIC_DIR, 'drawings');
+const CUSTOM_DIR = path.join(PUBLIC_DIR, 'drawings', 'customizados');
+
+// Log para debug
+console.log('🔍 Resolvendo caminhos:');
+console.log('  __dirname:', __dirname);
+console.log('  process.cwd():', process.cwd());
+console.log('  PUBLIC_DIR:', PUBLIC_DIR);
+console.log('  PUBLIC_DIR existe?', fs.existsSync(PUBLIC_DIR));
 
 // Inicializar OpenAI
 // Prioridade: variável de ambiente > config.js
