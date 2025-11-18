@@ -63,3 +63,23 @@ export function getImageUrlFromUrl() {
     return params.get('url');
 }
 
+/**
+ * Verifica se uma URL é do S3
+ * @param {string} url - URL para verificar
+ * @returns {boolean} true se a URL for do S3
+ */
+export function isS3Url(url) {
+    if (!url) return false;
+    return url.includes('.s3.') && url.includes('.amazonaws.com');
+}
+
+/**
+ * Converte uma URL do S3 em uma URL do proxy do servidor
+ * @param {string} s3Url - URL do S3
+ * @returns {string} URL do proxy
+ */
+export function getProxyUrl(s3Url) {
+    if (!isS3Url(s3Url)) return s3Url;
+    return `/api/proxy-image?url=${encodeURIComponent(s3Url)}`;
+}
+

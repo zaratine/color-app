@@ -45,7 +45,33 @@ function getDrawingsDatabaseFromFilesystem() {
 // Função principal para listar desenhos de todas as categorias
 // Prioriza S3 se disponível, caso contrário usa filesystem
 async function getDrawingsDatabase() {
-    // Tentar usar S3 primeiro se estiver configurado
+    // No Vercel/serverless, SEMPRE usar S3 (filesystem não é persistente)
+    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    if (isVercel || isProduction) {
+        if (!isS3Available()) {
+            console.error('❌ ERRO: S3 não está configurado no ambiente Vercel/Produção!');
+            console.error('❌ Configure as variáveis de ambiente no painel do Vercel:');
+            console.error('   - AWS_ACCESS_KEY_ID');
+            console.error('   - AWS_SECRET_ACCESS_KEY');
+            console.error('   - AWS_REGION');
+            console.error('   - AWS_S3_BUCKET_NAME');
+            throw new Error('S3 deve estar configurado em ambientes serverless. Configure as variáveis de ambiente no Vercel.');
+        }
+        
+        try {
+            console.log('📦 Usando S3 para listar desenhos (ambiente Vercel/Produção)...');
+            const database = await getDrawingsFromS3();
+            return database;
+        } catch (error) {
+            console.error('❌ ERRO CRÍTICO: Falha ao ler desenhos do S3 no ambiente Vercel:', error.message);
+            console.error('❌ Stack trace:', error.stack);
+            throw error; // Não fazer fallback para filesystem no Vercel
+        }
+    }
+    
+    // Em desenvolvimento local, tentar S3 primeiro se estiver configurado
     if (isS3Available()) {
         try {
             console.log('📦 Usando S3 para listar desenhos...');
@@ -53,12 +79,12 @@ async function getDrawingsDatabase() {
             return database;
         } catch (error) {
             console.error('⚠️  Erro ao ler desenhos do S3, usando filesystem como fallback:', error.message);
-            // Fallback para filesystem em caso de erro
+            // Fallback para filesystem em caso de erro (apenas em desenvolvimento)
             return getDrawingsDatabaseFromFilesystem();
         }
     }
     
-    // Usar filesystem se S3 não estiver disponível
+    // Usar filesystem se S3 não estiver disponível (apenas em desenvolvimento)
     console.log('📁 Usando filesystem para listar desenhos...');
     return getDrawingsDatabaseFromFilesystem();
 }

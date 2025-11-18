@@ -1,6 +1,6 @@
 // UI - Lógica de pintura/preenchimento para imagens PNG usando Canvas
 
-import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl } from '../utils/urlUtils.js';
+import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl, getProxyUrl, isS3Url } from '../utils/urlUtils.js';
 
 // Paleta de 24 cores para crianças
 const COLOR_PALETTE = [
@@ -290,7 +290,12 @@ function loadImage() {
 
     // Verificar se há URL completa (S3) ou usar caminho local
     const imageUrlFromParams = getImageUrlFromUrl();
-    const imagePath = imageUrlFromParams || `drawings/${category}/${drawing}`;
+    let imagePath = imageUrlFromParams || `drawings/${category}/${drawing}`;
+    
+    // Se for URL do S3, usar proxy para evitar problemas de CORS
+    if (isS3Url(imagePath)) {
+        imagePath = getProxyUrl(imagePath);
+    }
     
     container = document.getElementById('canvas-container');
     
@@ -300,7 +305,10 @@ function loadImage() {
     
     // Carregar imagem
     image = new Image();
-    image.crossOrigin = 'anonymous';
+    // Usar crossOrigin apenas se não for o proxy (que já tem CORS configurado)
+    if (!isS3Url(imageUrlFromParams)) {
+        image.crossOrigin = 'anonymous';
+    }
     
     image.onload = function() {
         // Usar as dimensões originais da imagem para o canvas

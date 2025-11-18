@@ -10,7 +10,12 @@ export async function loadCategories() {
     const grid = document.getElementById('categories-grid');
     if (!grid) return;
 
-    grid.innerHTML = '<p>Carregando categorias...</p>';
+    grid.innerHTML = `
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p class="loading-label">Carregando categorias...</p>
+        </div>
+    `;
 
     try {
         console.log('📋 Carregando categorias...');

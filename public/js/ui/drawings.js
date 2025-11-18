@@ -1,7 +1,7 @@
 // UI - Renderização de desenhos de uma categoria
 
 import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl } from '../services/drawingsService.js';
-import { getCategoryFromUrl, getPaintUrl } from '../utils/urlUtils.js';
+import { getCategoryFromUrl, getPaintUrl, getProxyUrl, isS3Url } from '../utils/urlUtils.js';
 
 /**
  * Carrega e renderiza os desenhos de uma categoria
@@ -19,7 +19,12 @@ export async function loadDrawings() {
     const grid = document.getElementById('drawings-grid');
     if (!grid) return;
 
-    grid.innerHTML = '<p>Carregando desenhos...</p>';
+    grid.innerHTML = `
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p class="loading-label">Carregando desenhos...</p>
+        </div>
+    `;
 
     try {
         // Atualizar título
@@ -50,8 +55,8 @@ export async function loadDrawings() {
             // Obter URL ou caminho da imagem
             let thumbnailPath;
             if (imageUrl) {
-                // Usar URL do S3
-                thumbnailPath = imageUrl;
+                // Se for URL do S3, usar proxy para evitar problemas de CORS
+                thumbnailPath = isS3Url(imageUrl) ? getProxyUrl(imageUrl) : imageUrl;
             } else {
                 // Usar caminho relativo (filesystem)
                 thumbnailPath = `drawings/${category}/${filename}`;

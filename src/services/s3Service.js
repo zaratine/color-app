@@ -1,5 +1,5 @@
 // Serviço para integração com AWS S3
-const { S3Client, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { config } = require('../config');
 const { formatDisplayName } = require('../utils/stringUtils');
 
@@ -18,6 +18,16 @@ const isS3Configured = accessKeyId &&
                        bucketName &&
                        bucketName !== 'nome-do-seu-bucket';
 
+// Log de debug para identificar problemas de configuração
+if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    console.log('🔍 Verificando configuração S3 no ambiente Vercel/Produção:');
+    console.log('   - AWS_ACCESS_KEY_ID:', accessKeyId ? `${accessKeyId.substring(0, 8)}...` : 'NÃO DEFINIDO');
+    console.log('   - AWS_SECRET_ACCESS_KEY:', secretAccessKey ? 'DEFINIDO' : 'NÃO DEFINIDO');
+    console.log('   - AWS_REGION:', region || 'NÃO DEFINIDO');
+    console.log('   - AWS_S3_BUCKET_NAME:', bucketName || 'NÃO DEFINIDO');
+    console.log('   - S3 Configurado?', isS3Configured ? 'SIM ✅' : 'NÃO ❌');
+}
+
 // Criar cliente S3 apenas se as credenciais estiverem configuradas
 let s3Client = null;
 if (isS3Configured) {
@@ -30,7 +40,12 @@ if (isS3Configured) {
     });
     console.log('✅ Cliente S3 configurado. Bucket:', bucketName, 'Região:', region);
 } else {
-    console.log('ℹ️  S3 não configurado. Usando salvamento local.');
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+        console.error('❌ S3 não configurado no ambiente Vercel/Produção!');
+        console.error('❌ Configure as variáveis de ambiente no painel do Vercel.');
+    } else {
+        console.log('ℹ️  S3 não configurado. Usando salvamento local.');
+    }
 }
 
 /**
@@ -86,7 +101,15 @@ async function uploadToS3(imageBuffer, filename, contentType = 'image/png') {
  * @returns {boolean}
  */
 function isS3Available() {
-    return isS3Configured && s3Client !== null;
+    const available = isS3Configured && s3Client !== null;
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+        if (!available) {
+            console.error('❌ isS3Available() retornou FALSE no ambiente Vercel/Produção');
+            console.error('   - isS3Configured:', isS3Configured);
+            console.error('   - s3Client:', s3Client !== null ? 'criado' : 'null');
+        }
+    }
+    return available;
 }
 
 /**
@@ -271,11 +294,75 @@ function getS3PublicUrl(key) {
     return `https://${bucketName}.s3.${region}.amazonaws.com/${cleanKey}`;
 }
 
+/**
+ * Extrai a chave do S3 a partir de uma URL pública
+ * @param {string} url - URL pública do S3
+ * @returns {string|null} Chave do objeto ou null se a URL não for válida
+ */
+function extractKeyFromUrl(url) {
+    try {
+        if (!url) return null;
+        
+        // Formato esperado: https://bucket-name.s3.region.amazonaws.com/key
+        // Ou: https://bucket-name.s3-region.amazonaws.com/key (formato antigo)
+        // Usar regex mais flexível para capturar qualquer região
+        const urlPattern = new RegExp(`https://${bucketName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.s3[.-][^.]+\.amazonaws\\.com/(.+)`);
+        const match = url.match(urlPattern);
+        
+        if (match && match[1]) {
+            // Decodificar a URL (pode ter caracteres codificados)
+            return decodeURIComponent(match[1]);
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Erro ao extrair chave da URL:', error);
+        return null;
+    }
+}
+
+/**
+ * Busca um objeto do S3 e retorna o buffer
+ * @param {string} key - Chave do objeto no S3 (ex: "drawings/animais/Cachorro.png")
+ * @returns {Promise<{Body: Buffer, ContentType: string}>} Buffer e tipo de conteúdo do objeto
+ */
+async function getObjectFromS3(key) {
+    if (!isS3Configured || !s3Client) {
+        throw new Error('S3 não está configurado. Configure as variáveis de ambiente AWS.');
+    }
+
+    try {
+        const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: key
+        });
+
+        const response = await s3Client.send(command);
+        
+        // Converter stream para buffer
+        const chunks = [];
+        for await (const chunk of response.Body) {
+            chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+
+        return {
+            Body: buffer,
+            ContentType: response.ContentType || 'image/png'
+        };
+    } catch (error) {
+        console.error('Erro ao buscar objeto do S3:', error.message);
+        throw error;
+    }
+}
+
 module.exports = {
     uploadToS3,
     isS3Available,
     listObjects,
     getDrawingsFromS3,
-    getS3PublicUrl
+    getS3PublicUrl,
+    extractKeyFromUrl,
+    getObjectFromS3
 };
 

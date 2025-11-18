@@ -46,7 +46,17 @@ Este guia explica como configurar um bucket S3 na AWS para armazenar os desenhos
 
 4. Clique em **"Save changes"**
 
-## Passo 3: Configurar CORS
+## Passo 3: Configurar CORS (Opcional - Proxy Recomendado)
+
+> **Nota**: O sistema agora usa um proxy no servidor para servir imagens do S3, o que evita problemas de CORS. A configuração CORS no S3 ainda é recomendada, mas não é estritamente necessária se você usar o proxy.
+
+### Opção 1: Usar Proxy (Recomendado - Já Implementado)
+
+O sistema automaticamente detecta URLs do S3 e as redireciona através de um proxy no servidor (`/api/proxy-image`), que adiciona os headers CORS corretos. Isso significa que você **não precisa** configurar CORS no S3, mas ainda é recomendado para melhor performance.
+
+### Opção 2: Configurar CORS no S3
+
+Se você quiser servir imagens diretamente do S3 (sem proxy), configure CORS:
 
 1. Ainda na aba **"Permissions"**, role até **"Cross-origin resource sharing (CORS)"**
 2. Clique em **"Edit"**
@@ -74,6 +84,8 @@ Este guia explica como configurar um bucket S3 na AWS para armazenar os desenhos
 ```
 
 4. Clique em **"Save changes"**
+
+> **Importante**: Mesmo com CORS configurado no S3, o sistema ainda usa o proxy por padrão para garantir compatibilidade. Se você quiser desabilitar o proxy e usar URLs diretas do S3, será necessário modificar o código.
 
 ## Passo 4: Criar Política IAM
 
@@ -338,7 +350,15 @@ E aparecerão automaticamente na categoria "customizados" na interface.
 ### Imagens não aparecem no navegador
 - Verifique se a política de bucket permite acesso público
 - Confirme que o Block Public Access está desabilitado
-- Verifique a configuração CORS
+- Verifique a configuração CORS (se não estiver usando o proxy)
+- O sistema usa um proxy automático para imagens do S3, então problemas de CORS devem ser resolvidos automaticamente
+
+### Erro de CORS ao carregar imagens
+- O sistema agora usa um proxy automático (`/api/proxy-image`) que resolve problemas de CORS
+- Se você ainda encontrar erros de CORS, verifique se:
+  - O servidor está rodando corretamente
+  - As credenciais AWS estão configuradas
+  - O bucket e região estão corretos no `config.js`
 
 ### Erro: "InvalidAccessKeyId"
 - Verifique se as credenciais foram copiadas corretamente
