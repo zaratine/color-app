@@ -1,6 +1,6 @@
 {
-  "watch": ["server.js", "config.js", "js/", "styles/"],
-  "ignore": ["drawings/**", "node_modules/**", "*.html"],
+  "watch": ["src/", "config.js", "public/js/", "public/styles/"],
+  "ignore": ["public/drawings/**", "node_modules/**", "public/*.html"],
   "ext": "js,json"
 }
 

@@ -70,7 +70,7 @@ async function loadDrawings() {
         const drawingCard = document.createElement('div');
         drawingCard.className = 'drawing-card';
         drawingCard.onclick = () => {
-            window.location.href = `paint.html?cat=${encodeURIComponent(category)}&drawing=${encodeURIComponent(drawing)}`;
+            window.location.href = `/paint?cat=${encodeURIComponent(category)}&drawing=${encodeURIComponent(drawing)}`;
         };
 
         const thumbnailPath = `drawings/${category}/${drawing}`;

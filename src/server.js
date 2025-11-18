@@ -11,7 +11,7 @@ const OpenAI = require('openai');
 // Carregar configurações
 let config;
 try {
-    config = require('./config.js');
+    config = require('../config.js');
 } catch (error) {
     console.error('⚠️  Arquivo config.js não encontrado. Criando arquivo de exemplo...');
     // Criar arquivo de exemplo
@@ -26,14 +26,14 @@ module.exports = {
     // Porta do servidor
     PORT: 8000
 };`;
-    fs.writeFileSync(path.join(__dirname, 'config.js'), exampleConfig);
+    fs.writeFileSync(path.resolve(__dirname, '..', 'config.js'), exampleConfig);
     console.log('✅ Arquivo config.js criado. Por favor, edite-o e adicione sua chave da OpenAI.');
     process.exit(1);
 }
 
 const PORT = config.PORT || 8000;
-const DRAWINGS_DIR = path.join(__dirname, 'drawings');
-const CUSTOM_DIR = path.join(__dirname, 'drawings', 'customizados');
+const DRAWINGS_DIR = path.resolve(__dirname, '..', 'public', 'drawings');
+const CUSTOM_DIR = path.resolve(__dirname, '..', 'public', 'drawings', 'customizados');
 
 // Inicializar OpenAI (usa config.js ou variável de ambiente como fallback)
 const apiKey = config.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
@@ -304,23 +304,22 @@ app.post('/api/generate-drawing', async (req, res) => {
 });
 
 // Rotas limpas (sem extensões)
+const publicDir = path.resolve(__dirname, '..', 'public');
+
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.resolve(publicDir, 'index.html'));
 });
 
 app.get('/paint', (req, res) => {
-    res.sendFile(path.join(__dirname, 'paint.html'));
+    res.sendFile(path.resolve(publicDir, 'paint.html'));
 });
 
 app.get('/category', (req, res) => {
-    res.sendFile(path.join(__dirname, 'category.html'));
+    res.sendFile(path.resolve(publicDir, 'category.html'));
 });
 
-// Servir apenas arquivos estáticos públicos (não serve server.js, config.js, etc.)
-// Servir pastas específicas de forma segura
-app.use('/js', express.static(path.join(__dirname, 'js')));
-app.use('/styles', express.static(path.join(__dirname, 'styles')));
-app.use('/drawings', express.static(path.join(__dirname, 'drawings')));
+// Servir arquivos estáticos da pasta public (seguro - apenas arquivos públicos)
+app.use(express.static(publicDir));
 
 // Iniciar servidor
 app.listen(PORT, () => {

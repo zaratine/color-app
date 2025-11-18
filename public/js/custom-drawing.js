@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Aguardar um pouco antes de redirecionar
             setTimeout(() => {
-                window.location.href = `paint.html?cat=customizados&drawing=${encodeURIComponent(data.filename)}`;
+                window.location.href = `/paint?cat=customizados&drawing=${encodeURIComponent(data.filename)}`;
             }, 1500);
 
         } catch (error) {
