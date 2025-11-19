@@ -151,24 +151,41 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
     // Validar coordenadas
     const x = Math.floor(startX);
     const y = Math.floor(startY);
-    if (x < 0 || x >= width || y < 0 || y >= height) return;
+    if (x < 0 || x >= width || y < 0 || y >= height) {
+        console.log('Coordenadas inválidas:', { x, y, width, height });
+        return;
+    }
     
     // Obter cor do ponto inicial
     const startPos = (y * width + x) * 4;
-    const startR = data[startPos];
-    const startG = data[startPos + 1];
-    const startB = data[startPos + 2];
+    let startR = data[startPos];
+    let startG = data[startPos + 1];
+    let startB = data[startPos + 2];
     const startA = data[startPos + 3];
     
-    // Se o pixel é transparente, não fazer nada
-    if (startA === 0) return;
+    console.log('Pixel inicial:', { x, y, r: startR, g: startG, b: startB, a: startA });
+    
+    // Se o pixel é completamente transparente, tratar como branco (para imagens com transparência)
+    // Isso permite que o flood fill funcione mesmo em imagens com fundo transparente
+    if (startA === 0) {
+        console.log('Pixel transparente detectado, tratando como branco');
+        startR = 255;
+        startG = 255;
+        startB = 255;
+    }
     
     // Obter cor de preenchimento
     const fillRgb = hexToRgb(fillColor);
-    if (!fillRgb) return;
+    if (!fillRgb) {
+        console.error('Cor de preenchimento inválida:', fillColor);
+        return;
+    }
+    
+    console.log('Cor de preenchimento:', fillRgb);
     
     // Se a cor inicial já é a cor de preenchimento, não fazer nada
     if (colorsMatch(startR, startG, startB, fillRgb.r, fillRgb.g, fillRgb.b, 5)) {
+        console.log('Cor já é a mesma, ignorando');
         return;
     }
     
@@ -188,13 +205,17 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
         if (px < 0 || px >= width || py < 0 || py >= height) continue;
         
         const pos = (py * width + px) * 4;
-        const r = data[pos];
-        const g = data[pos + 1];
-        const b = data[pos + 2];
         const a = data[pos + 3];
         
-        // Ignorar pixels transparentes
-        if (a === 0) continue;
+        // Se o pixel é transparente, tratar como branco (mesma lógica do pixel inicial)
+        let r = data[pos];
+        let g = data[pos + 1];
+        let b = data[pos + 2];
+        if (a === 0) {
+            r = 255;
+            g = 255;
+            b = 255;
+        }
         
         // Verificar se é a cor que queremos substituir (com tolerância)
         if (!colorsMatch(r, g, b, targetColor.r, targetColor.g, targetColor.b, tolerance)) {
@@ -205,7 +226,8 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
         data[pos] = fillRgb.r;
         data[pos + 1] = fillRgb.g;
         data[pos + 2] = fillRgb.b;
-        // Manter alpha original (data[pos + 3] = a)
+        // Se o pixel era transparente, torná-lo opaco; caso contrário, manter alpha original
+        data[pos + 3] = a === 0 ? 255 : a;
         
         visited.add(key);
         
@@ -215,6 +237,8 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
         queue.push([px, py + 1]);
         queue.push([px, py - 1]);
     }
+    
+    console.log('Flood fill concluído. Pixels preenchidos:', visited.size);
     
     // Aplicar as mudanças
     ctx.putImageData(imageData, 0, 0);
@@ -301,7 +325,7 @@ function loadImage() {
     
     // Criar canvas
     canvas = document.createElement('canvas');
-    ctx = canvas.getContext('2d');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
     
     // Carregar imagem
     image = new Image();
@@ -314,6 +338,11 @@ function loadImage() {
         // Usar as dimensões originais da imagem para o canvas
         canvas.width = image.width;
         canvas.height = image.height;
+        
+        // Preencher o canvas com branco antes de desenhar a imagem
+        // Isso garante que não haja pixels transparentes que impeçam o flood fill
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         // Desenhar imagem no canvas com tamanho original
         ctx.drawImage(image, 0, 0);
@@ -339,8 +368,19 @@ function loadImage() {
         
         container.appendChild(canvas);
         
+        // Configurar modo de composição para melhor renderização
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
         // Adicionar event listener para clique
         canvas.addEventListener('click', handleCanvasClick);
+        
+        console.log('Canvas criado e event listener adicionado', { 
+            canvasWidth: canvas.width, 
+            canvasHeight: canvas.height,
+            imageWidth: image.width,
+            imageHeight: image.height
+        });
         
         // Aguardar um frame para garantir que o layout esteja calculado
         requestAnimationFrame(() => {
@@ -424,7 +464,10 @@ function loadImage() {
 
 // Função para lidar com cliques no canvas
 function handleCanvasClick(e) {
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx) {
+        console.error('Canvas ou contexto não disponível');
+        return;
+    }
     
     const rect = canvas.getBoundingClientRect();
     // Calcular escala entre o canvas real e o canvas renderizado
@@ -434,6 +477,8 @@ function handleCanvasClick(e) {
     // Obter coordenadas do clique em relação ao canvas
     const x = Math.floor((e.clientX - rect.left) * scaleX);
     const y = Math.floor((e.clientY - rect.top) * scaleY);
+    
+    console.log('Clique detectado:', { x, y, selectedColor, canvasSize: { width: canvas.width, height: canvas.height }, rectSize: { width: rect.width, height: rect.height } });
     
     // Aplicar flood fill
     floodFill(canvas, ctx, x, y, selectedColor);

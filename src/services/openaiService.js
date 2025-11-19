@@ -113,22 +113,43 @@ async function generateDrawing(theme) {
         
         console.log('    [generateDrawing] Chamando OpenAI API...');
         const response = await openai.images.generate({
-            //model: 'gpt-image-1',
-            model: 'dall-e-3',
+            model: 'gpt-image-1',
+            //model: 'dall-e-3',
             prompt: prompt,
-            //output_format: 'png' //apenas para o modelo gpt-image-1
+            background: 'opaque',
+            quality: 'medium',
+            output_format: 'png' //apenas para o modelo gpt-image-1
             //size: '1792x1024', // Aspect ratio 16:9 (aproximado)
             //quality: 'standard',
-            response_format: 'url' // Não suportado pelo modelo gpt-image-1-mini
+            //response_format: 'url' // Não suportado pelo modelo gpt-image-1-mini
         });
 
         console.log('    [generateDrawing] Resposta da OpenAI recebida');
-        const imageUrl = response.data[0].url;
-        console.log('    [generateDrawing] URL da imagem:', imageUrl);
+        console.log('    [generateDrawing] Estrutura da resposta:', JSON.stringify(response, null, 2));
         
-        // Baixar a imagem usando https nativo
-        console.log('    [generateDrawing] Baixando imagem...');
-        const imageBuffer = await downloadImage(imageUrl);
+        // Verificar se a resposta tem dados
+        if (!response || !response.data || !Array.isArray(response.data) || response.data.length === 0) {
+            throw new Error('Resposta da OpenAI inválida: nenhum dado retornado');
+        }
+        
+        const imageData = response.data[0];
+        let imageBuffer;
+        
+        // Verificar se a resposta contém URL ou base64
+        if (imageData.url) {
+            console.log('    [generateDrawing] URL da imagem encontrada:', imageData.url);
+            // Baixar a imagem usando https nativo
+            console.log('    [generateDrawing] Baixando imagem...');
+            imageBuffer = await downloadImage(imageData.url);
+        } else if (imageData.b64_json) {
+            console.log('    [generateDrawing] Imagem em base64 encontrada');
+            // Converter base64 para buffer
+            imageBuffer = Buffer.from(imageData.b64_json, 'base64');
+            console.log('    [generateDrawing] Imagem convertida de base64 (tamanho:', imageBuffer.length, 'bytes)');
+        } else {
+            console.error('    [generateDrawing] Estrutura da resposta:', JSON.stringify(imageData, null, 2));
+            throw new Error('Resposta da OpenAI não contém URL nem base64. Estrutura: ' + JSON.stringify(Object.keys(imageData)));
+        }
         console.log('    [generateDrawing] Imagem baixada (tamanho:', imageBuffer.length, 'bytes)');
         
         // Gerar nome do arquivo
