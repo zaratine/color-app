@@ -35,6 +35,7 @@ let canvas = null;
 let ctx = null;
 let image = null;
 let imageData = null;
+let originalImageData = null; // Armazena a ImageData original para preservar outlines
 let container = null;
 let resizeTimeout = null;
 
@@ -141,6 +142,21 @@ function colorsMatch(r1, g1, b1, r2, g2, b2, tolerance = 10) {
            Math.abs(b1 - b2) <= tolerance;
 }
 
+// Função para verificar se um pixel é parte do outline original (preto na imagem original)
+function isOriginalOutline(x, y, originalImageData, width) {
+    if (!originalImageData) return false;
+    
+    const pos = (y * width + x) * 4;
+    const r = originalImageData.data[pos];
+    const g = originalImageData.data[pos + 1];
+    const b = originalImageData.data[pos + 2];
+    
+    // Verificar se é preto (ou muito próximo de preto) na imagem original
+    // Tolerância de 30 para capturar pixels pretos mesmo com pequenas variações
+    const blackTolerance = 30;
+    return r <= blackTolerance && g <= blackTolerance && b <= blackTolerance;
+}
+
 // Algoritmo de flood fill (preenchimento por área)
 function floodFill(canvas, ctx, startX, startY, fillColor) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -164,6 +180,13 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
     const startA = data[startPos + 3];
     
     console.log('Pixel inicial:', { x, y, r: startR, g: startG, b: startB, a: startA });
+    
+    // Verificar se o pixel clicado é parte do outline original
+    const clickedOnOriginalOutline = isOriginalOutline(x, y, originalImageData, width);
+    if (clickedOnOriginalOutline) {
+        console.log('Clicou em outline original, ignorando preenchimento');
+        return;
+    }
     
     // Se o pixel é completamente transparente, tratar como branco (para imagens com transparência)
     // Isso permite que o flood fill funcione mesmo em imagens com fundo transparente
@@ -203,6 +226,11 @@ function floodFill(canvas, ctx, startX, startY, fillColor) {
         
         if (visited.has(key)) continue;
         if (px < 0 || px >= width || py < 0 || py >= height) continue;
+        
+        // Pular pixels que são parte do outline original (não preencher outlines)
+        if (isOriginalOutline(px, py, originalImageData, width)) {
+            continue;
+        }
         
         const pos = (py * width + px) * 4;
         const a = data[pos + 3];
@@ -346,6 +374,9 @@ function loadImage() {
         
         // Desenhar imagem no canvas com tamanho original
         ctx.drawImage(image, 0, 0);
+        
+        // Armazenar ImageData original para preservar outlines pretos
+        originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
         // Preservar o botão de download antes de limpar o container
         const downloadLink = container.querySelector('#download-link');
