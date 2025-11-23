@@ -3,23 +3,28 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 const { CUSTOM_DIR } = require('../config');
-const { uploadToS3, isS3Available, getS3PublicUrl, extractKeyFromUrl, getObjectFromS3, listObjects } = require('./s3Service');
+const { uploadToS3, uploadThumbnailToS3: uploadThumbnailToS3Service, objectExistsInS3, isS3Available, getS3PublicUrl, getThumbnailKey, getThumbnailFilename, extractKeyFromUrl, getObjectFromS3, listObjects } = require('./s3Service');
 
 /**
  * Gera um thumbnail de uma imagem
  * @param {Buffer} imageBuffer - Buffer da imagem original
- * @param {number} width - Largura do thumbnail (padrão: 100px)
+ * @param {number} width - Largura do thumbnail (padrão: 200px)
  * @returns {Promise<Buffer>} Buffer do thumbnail gerado
  */
-async function generateThumbnail(imageBuffer, width = 100) {
+async function generateThumbnail(imageBuffer, width = 200) {
     try {
         console.log(`    [generateThumbnail] Gerando thumbnail com largura ${width}px...`);
         const thumbnailBuffer = await sharp(imageBuffer)
             .resize(width, null, {
                 withoutEnlargement: true,
-                fit: 'inside'
+                fit: 'inside',
+                kernel: 'lanczos3' // Algoritmo de alta qualidade para redimensionamento
             })
-            .png()
+            .png({
+                compressionLevel: 9, // Máxima compressão
+                quality: 100, // Máxima qualidade
+                palette: false // Não usar paleta para manter qualidade
+            })
             .toBuffer();
         
         console.log(`    [generateThumbnail] Thumbnail gerado (tamanho: ${thumbnailBuffer.length} bytes)`);
@@ -31,41 +36,35 @@ async function generateThumbnail(imageBuffer, width = 100) {
 }
 
 /**
- * Gera o nome do arquivo do thumbnail a partir do nome original
- * @param {string} originalFilename - Nome do arquivo original (ex: "desenho.png")
- * @returns {string} Nome do arquivo thumbnail (ex: "thumb_desenho.png")
+ * Extrai a chave S3 original a partir da chave do thumbnail
+ * @param {string} thumbnailKey - Chave S3 do thumbnail (ex: "drawings/customizados/thumb_desenho.png")
+ * @returns {string|null} Chave S3 original (ex: "drawings/customizados/desenho.png") ou null se não for um thumbnail
  */
-function getThumbnailFilename(originalFilename) {
-    // Extrair nome e extensão
-    const lastDotIndex = originalFilename.lastIndexOf('.');
-    if (lastDotIndex === -1) {
-        // Sem extensão, apenas adicionar prefixo
-        return `thumb_${originalFilename}`;
+function getOriginalKeyFromThumbnailKey(thumbnailKey) {
+    // Verificar se é um thumbnail (contém /thumb_ no caminho)
+    const thumbIndex = thumbnailKey.indexOf('/thumb_');
+    if (thumbIndex === -1) {
+        // Não é um thumbnail
+        return null;
     }
     
-    const name = originalFilename.substring(0, lastDotIndex);
-    const extension = originalFilename.substring(lastDotIndex);
-    return `thumb_${name}${extension}`;
-}
-
-/**
- * Gera a chave S3 do thumbnail a partir da chave original
- * @param {string} originalKey - Chave S3 original (ex: "drawings/customizados/desenho.png")
- * @returns {string} Chave S3 do thumbnail (ex: "drawings/customizados/thumb_desenho.png")
- */
-function getThumbnailKey(originalKey) {
     // Extrair diretório e nome do arquivo
-    const lastSlashIndex = originalKey.lastIndexOf('/');
+    const lastSlashIndex = thumbnailKey.lastIndexOf('/');
     if (lastSlashIndex === -1) {
-        // Sem diretório, apenas adicionar prefixo
-        return getThumbnailFilename(originalKey);
+        return null;
     }
     
-    const directory = originalKey.substring(0, lastSlashIndex + 1);
-    const filename = originalKey.substring(lastSlashIndex + 1);
-    const thumbnailFilename = getThumbnailFilename(filename);
+    const directory = thumbnailKey.substring(0, lastSlashIndex + 1);
+    const thumbnailFilename = thumbnailKey.substring(lastSlashIndex + 1);
     
-    return `${directory}${thumbnailFilename}`;
+    // Remover prefixo "thumb_" do nome do arquivo
+    if (!thumbnailFilename.startsWith('thumb_')) {
+        return null;
+    }
+    
+    const originalFilename = thumbnailFilename.substring(6); // Remove "thumb_"
+    
+    return `${directory}${originalFilename}`;
 }
 
 /**
@@ -91,46 +90,11 @@ async function uploadThumbnailToS3(thumbnailBuffer, originalFilename, originalKe
             key = `drawings/customizados/${thumbnailFilename}`;
         }
 
-        console.log(`    [uploadThumbnailToS3] Fazendo upload do thumbnail...`);
-        console.log(`    [uploadThumbnailToS3] Key: ${key}`);
-        console.log(`    [uploadThumbnailToS3] Tamanho: ${thumbnailBuffer.length} bytes`);
-
-        // Usar a função uploadToS3 existente, mas precisamos adaptar
-        // Vamos fazer o upload diretamente aqui
-        const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-        const { config } = require('../config');
-        
-        const accessKeyId = process.env.AWS_ACCESS_KEY_ID || config.AWS_ACCESS_KEY_ID;
-        const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || config.AWS_SECRET_ACCESS_KEY;
-        const region = process.env.AWS_REGION || config.AWS_REGION || 'us-east-1';
-        const bucketName = process.env.AWS_S3_BUCKET_NAME || config.AWS_S3_BUCKET_NAME;
-
-        const s3Client = new S3Client({
-            region: region,
-            credentials: {
-                accessKeyId: accessKeyId,
-                secretAccessKey: secretAccessKey
-            }
-        });
-
-        const command = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: key,
-            Body: thumbnailBuffer,
-            ContentType: 'image/png',
-            ACL: 'public-read'
-        });
-
-        await s3Client.send(command);
-        console.log('    [uploadThumbnailToS3] Upload do thumbnail concluído com sucesso');
-
-        // Construir URL pública
-        const publicUrl = getS3PublicUrl(key);
-        console.log('    [uploadThumbnailToS3] URL pública do thumbnail:', publicUrl);
-
-        return publicUrl;
+        // Usar a função do s3Service que usa o cliente compartilhado
+        return await uploadThumbnailToS3Service(thumbnailBuffer, key);
     } catch (error) {
         console.error('    [uploadThumbnailToS3] Erro ao fazer upload do thumbnail:', error.message);
+        console.error('    [uploadThumbnailToS3] Stack:', error.stack);
         throw error;
     }
 }
@@ -141,48 +105,7 @@ async function uploadThumbnailToS3(thumbnailBuffer, originalFilename, originalKe
  * @returns {Promise<boolean>} true se o thumbnail existe, false caso contrário
  */
 async function thumbnailExistsInS3(thumbnailKey) {
-    if (!isS3Available()) {
-        return false;
-    }
-
-    try {
-        // Usar HeadObjectCommand para verificar se o objeto existe
-        const { S3Client, HeadObjectCommand } = require('@aws-sdk/client-s3');
-        const { config } = require('../config');
-        
-        const accessKeyId = process.env.AWS_ACCESS_KEY_ID || config.AWS_ACCESS_KEY_ID;
-        const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || config.AWS_SECRET_ACCESS_KEY;
-        const region = process.env.AWS_REGION || config.AWS_REGION || 'us-east-1';
-        const bucketName = process.env.AWS_S3_BUCKET_NAME || config.AWS_S3_BUCKET_NAME;
-
-        const s3Client = new S3Client({
-            region: region,
-            credentials: {
-                accessKeyId: accessKeyId,
-                secretAccessKey: secretAccessKey
-            }
-        });
-
-        const command = new HeadObjectCommand({
-            Bucket: bucketName,
-            Key: thumbnailKey
-        });
-
-        try {
-            await s3Client.send(command);
-            return true; // Objeto existe
-        } catch (headError) {
-            // Se o erro for 404 (Not Found), o objeto não existe
-            if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
-                return false;
-            }
-            // Outros erros são propagados
-            throw headError;
-        }
-    } catch (error) {
-        console.error('    [thumbnailExistsInS3] Erro ao verificar thumbnail no S3:', error.message);
-        return false;
-    }
+    return await objectExistsInS3(thumbnailKey);
 }
 
 /**
@@ -223,7 +146,7 @@ async function generateAndSaveThumbnail(imageBuffer, originalFilename, originalK
         console.log('    [generateAndSaveThumbnail] Iniciando geração e salvamento do thumbnail...');
         
         // Gerar thumbnail
-        const thumbnailBuffer = await generateThumbnail(imageBuffer, 100);
+        const thumbnailBuffer = await generateThumbnail(imageBuffer, 200);
         
         const result = {
             url: null,
@@ -237,6 +160,7 @@ async function generateAndSaveThumbnail(imageBuffer, originalFilename, originalK
                 console.log('    [generateAndSaveThumbnail] Thumbnail salvo no S3 com sucesso');
             } catch (error) {
                 console.error('    [generateAndSaveThumbnail] Erro ao salvar thumbnail no S3:', error.message);
+                console.error('    [generateAndSaveThumbnail] Stack do erro:', error.stack);
                 // Continuar para tentar salvar localmente como fallback
             }
         }
@@ -282,13 +206,20 @@ async function generateThumbnailFromUrl(originalImageUrl) {
         const { Body, ContentType } = await getObjectFromS3(originalKey);
         
         // Gerar thumbnail
-        const thumbnailBuffer = await generateThumbnail(Body, 100);
+        const thumbnailBuffer = await generateThumbnail(Body, 200);
         
-        // Salvar thumbnail no S3
+        // Tentar salvar thumbnail no S3 (não crítico se falhar)
         const thumbnailKey = getThumbnailKey(originalKey);
-        const thumbnailUrl = await uploadThumbnailToS3(thumbnailBuffer, path.basename(originalKey), originalKey);
+        try {
+            const thumbnailUrl = await uploadThumbnailToS3(thumbnailBuffer, path.basename(originalKey), originalKey);
+            console.log('    [generateThumbnailFromUrl] ✅ Thumbnail gerado e salvo no S3 com sucesso');
+        } catch (uploadError) {
+            // Erro ao salvar não é crítico - continuar e retornar o thumbnail gerado
+            console.warn('    [generateThumbnailFromUrl] ⚠️  Thumbnail gerado mas não foi salvo no S3:', uploadError.message);
+            console.warn('    [generateThumbnailFromUrl] ⚠️  O thumbnail será retornado mesmo assim');
+            // Continuar - não lançar erro
+        }
         
-        console.log('    [generateThumbnailFromUrl] Thumbnail gerado e salvo com sucesso');
         return thumbnailBuffer;
     } catch (error) {
         console.error('    [generateThumbnailFromUrl] Erro ao gerar thumbnail a partir da URL:', error.message);
@@ -298,8 +229,7 @@ async function generateThumbnailFromUrl(originalImageUrl) {
 
 module.exports = {
     generateThumbnail,
-    getThumbnailFilename,
-    getThumbnailKey,
+    getOriginalKeyFromThumbnailKey,
     uploadThumbnailToS3,
     thumbnailExistsInS3,
     saveThumbnailLocally,

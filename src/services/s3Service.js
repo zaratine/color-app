@@ -1,8 +1,45 @@
 // Serviço para integração com AWS S3
-const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { config } = require('../config');
 const { formatDisplayName } = require('../utils/stringUtils');
-const { getThumbnailKey, getThumbnailFilename } = require('./thumbnailService');
+
+/**
+ * Gera o nome do arquivo do thumbnail a partir do nome original
+ * @param {string} originalFilename - Nome do arquivo original (ex: "desenho.png")
+ * @returns {string} Nome do arquivo thumbnail (ex: "thumb_desenho.png")
+ */
+function getThumbnailFilename(originalFilename) {
+    // Extrair nome e extensão
+    const lastDotIndex = originalFilename.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+        // Sem extensão, apenas adicionar prefixo
+        return `thumb_${originalFilename}`;
+    }
+    
+    const name = originalFilename.substring(0, lastDotIndex);
+    const extension = originalFilename.substring(lastDotIndex);
+    return `thumb_${name}${extension}`;
+}
+
+/**
+ * Gera a chave S3 do thumbnail a partir da chave original
+ * @param {string} originalKey - Chave S3 original (ex: "drawings/customizados/desenho.png")
+ * @returns {string} Chave S3 do thumbnail (ex: "drawings/customizados/thumb_desenho.png")
+ */
+function getThumbnailKey(originalKey) {
+    // Extrair diretório e nome do arquivo
+    const lastSlashIndex = originalKey.lastIndexOf('/');
+    if (lastSlashIndex === -1) {
+        // Sem diretório, apenas adicionar prefixo
+        return getThumbnailFilename(originalKey);
+    }
+    
+    const directory = originalKey.substring(0, lastSlashIndex + 1);
+    const filename = originalKey.substring(lastSlashIndex + 1);
+    const thumbnailFilename = getThumbnailFilename(filename);
+    
+    return `${directory}${thumbnailFilename}`;
+}
 
 // Configurar cliente S3
 // Prioridade: variável de ambiente > config.js
@@ -207,8 +244,8 @@ async function getDrawingsFromS3() {
         const database = {};
         const imageExtensions = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
-        // Processar cada objeto
-        objects.forEach(obj => {
+        // Processar cada objeto (usar for...of para suportar await)
+        for (const obj of objects) {
             const key = obj.Key;
             console.log(`📦 Processando chave: ${key}`);
             
@@ -219,13 +256,13 @@ async function getDrawingsFromS3() {
             
             if (!isImage) {
                 console.log(`   ⏭️  Ignorado (não é imagem): ${key}`);
-                return;
+                continue;
             }
             
             // Ignorar thumbnails na listagem principal (só queremos as imagens originais)
             if (key.includes('/thumb_') || key.endsWith('thumb_')) {
                 console.log(`   ⏭️  Ignorado (é thumbnail): ${key}`);
-                return;
+                continue;
             }
 
             // Extrair categoria e nome do arquivo
@@ -251,9 +288,25 @@ async function getDrawingsFromS3() {
                 // Adicionar arquivo à categoria com URL completa do S3
                 const publicUrl = getS3PublicUrl(key);
                 
-                // Gerar URL do thumbnail
+                // Verificar se o thumbnail existe antes de criar a URL
                 const thumbnailKey = getThumbnailKey(key);
-                const thumbnailUrl = getS3PublicUrl(thumbnailKey);
+                let thumbnailUrl = null;
+                
+                // Buscar metadata do thumbnail (existe e data de modificação)
+                const thumbnailMetadata = await getThumbnailMetadata(thumbnailKey);
+                if (thumbnailMetadata.exists) {
+                    // Thumbnail existe, usar URL direta do S3 com versionamento baseado no timestamp
+                    const baseUrl = getS3PublicUrl(thumbnailKey);
+                    // Adicionar parâmetro de versão baseado no timestamp de modificação
+                    // Isso força o navegador a buscar nova versão quando o thumbnail é regenerado
+                    const versionParam = thumbnailMetadata.lastModified ? `?v=${thumbnailMetadata.lastModified}` : '';
+                    thumbnailUrl = `${baseUrl}${versionParam}`;
+                    console.log(`   ✅ Thumbnail encontrado: ${thumbnailKey} (versão: ${thumbnailMetadata.lastModified})`);
+                } else {
+                    // Thumbnail não existe, usar endpoint que gera sob demanda
+                    thumbnailUrl = `/api/thumbnail?url=${encodeURIComponent(publicUrl)}`;
+                    console.log(`   ⚠️  Thumbnail não encontrado, usando endpoint sob demanda: ${thumbnailKey}`);
+                }
                 
                 database[category].drawings.push({
                     filename: filename,
@@ -265,7 +318,7 @@ async function getDrawingsFromS3() {
                 console.log(`   ⚠️  Chave ignorada (formato inválido): ${key}`);
                 console.log(`   💡 Formato esperado: drawings/{categoria}/{arquivo}`);
             }
-        });
+        }
 
         // Ordenar desenhos em cada categoria por nome do arquivo
         Object.keys(database).forEach(category => {
@@ -379,13 +432,127 @@ async function getObjectFromS3(key) {
     }
 }
 
+/**
+ * Verifica se um objeto existe no S3
+ * @param {string} key - Chave do objeto no S3
+ * @returns {Promise<boolean>} true se o objeto existe, false caso contrário
+ */
+async function objectExistsInS3(key) {
+    if (!isS3Configured || !s3Client) {
+        return false;
+    }
+
+    try {
+        const command = new HeadObjectCommand({
+            Bucket: bucketName,
+            Key: key
+        });
+
+        try {
+            await s3Client.send(command);
+            return true; // Objeto existe
+        } catch (headError) {
+            // Se o erro for 404 (Not Found), o objeto não existe
+            if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
+                return false;
+            }
+            // Outros erros são propagados
+            throw headError;
+        }
+    } catch (error) {
+        console.error('    [objectExistsInS3] Erro ao verificar objeto no S3:', error.message);
+        return false;
+    }
+}
+
+/**
+ * Busca metadata de um thumbnail no S3 (existe e data de modificação)
+ * @param {string} thumbnailKey - Chave S3 do thumbnail
+ * @returns {Promise<{exists: boolean, lastModified: number|null}>} Metadata do thumbnail
+ */
+async function getThumbnailMetadata(thumbnailKey) {
+    if (!isS3Configured || !s3Client) {
+        return { exists: false, lastModified: null };
+    }
+
+    try {
+        const command = new HeadObjectCommand({
+            Bucket: bucketName,
+            Key: thumbnailKey
+        });
+
+        try {
+            const response = await s3Client.send(command);
+            // Converter LastModified para timestamp (milissegundos)
+            const lastModified = response.LastModified ? response.LastModified.getTime() : null;
+            return {
+                exists: true,
+                lastModified: lastModified
+            };
+        } catch (headError) {
+            // Se o erro for 404 (Not Found), o objeto não existe
+            if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
+                return { exists: false, lastModified: null };
+            }
+            // Outros erros são propagados
+            throw headError;
+        }
+    } catch (error) {
+        console.error('    [getThumbnailMetadata] Erro ao buscar metadata do thumbnail:', error.message);
+        return { exists: false, lastModified: null };
+    }
+}
+
+/**
+ * Faz upload de um thumbnail para o S3
+ * @param {Buffer} thumbnailBuffer - Buffer do thumbnail
+ * @param {string} key - Chave S3 completa (ex: "drawings/customizados/thumb_desenho.png")
+ * @returns {Promise<string>} URL pública do thumbnail no S3
+ */
+async function uploadThumbnailToS3(thumbnailBuffer, key) {
+    if (!isS3Configured || !s3Client) {
+        throw new Error('S3 não está configurado. Configure as variáveis de ambiente AWS.');
+    }
+
+    try {
+        console.log('    [uploadThumbnailToS3] Fazendo upload do thumbnail...');
+        console.log('    [uploadThumbnailToS3] Key:', key);
+        console.log('    [uploadThumbnailToS3] Tamanho:', thumbnailBuffer.length, 'bytes');
+
+        const command = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+            Body: thumbnailBuffer,
+            ContentType: 'image/png',
+            ACL: 'public-read'
+        });
+
+        await s3Client.send(command);
+        console.log('    [uploadThumbnailToS3] Upload do thumbnail concluído com sucesso');
+
+        // Construir URL pública
+        const publicUrl = getS3PublicUrl(key);
+        console.log('    [uploadThumbnailToS3] URL pública do thumbnail:', publicUrl);
+
+        return publicUrl;
+    } catch (error) {
+        console.error('    [uploadThumbnailToS3] Erro ao fazer upload do thumbnail:', error.message);
+        console.error('    [uploadThumbnailToS3] Stack:', error.stack);
+        throw error;
+    }
+}
+
 module.exports = {
     uploadToS3,
+    uploadThumbnailToS3,
+    objectExistsInS3,
     isS3Available,
     listObjects,
     getDrawingsFromS3,
     getS3PublicUrl,
     getThumbnailUrl,
+    getThumbnailKey,
+    getThumbnailFilename,
     extractKeyFromUrl,
     getObjectFromS3
 };

@@ -1,6 +1,11 @@
 {
   "watch": ["src/", "config.js", "public/js/", "public/styles/"],
   "ignore": ["public/drawings/**", "node_modules/**", "public/*.html"],
-  "ext": "js,json"
+  "ext": "js,json",
+  "delay": 2000,
+  "signal": "SIGTERM",
+  "killTimeout": 10000,
+  "restartable": "rs",
+  "verbose": true
 }
 

@@ -55,10 +55,9 @@ export async function loadDrawings() {
             // Obter URL do thumbnail
             let thumbnailPath = getThumbnailUrl(drawing, category);
             
-            // Se for URL do S3 e não for a rota /api/thumbnail, usar proxy para evitar problemas de CORS
-            if (imageUrl && isS3Url(imageUrl) && !thumbnailPath.startsWith('/api/thumbnail')) {
-                thumbnailPath = getProxyUrl(thumbnailPath);
-            }
+            // Se for URL do S3 direta (não /api/thumbnail), usar diretamente (S3 já tem CORS configurado)
+            // Se for /api/thumbnail, já está correto (endpoint que gera sob demanda)
+            // Não forçar proxy para URLs diretas do S3 - elas devem funcionar diretamente
             
             const drawingName = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
 

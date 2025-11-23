@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "kill-port": "lsof -ti:8000 | xargs kill -9 2>/dev/null || echo 'Nenhum processo encontrado na porta 8000'",
+    "kill-all": "pkill -f nodemon && lsof -ti:8000 | xargs kill -9 2>/dev/null || echo 'Processos encerrados'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.490.0",

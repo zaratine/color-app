@@ -167,11 +167,18 @@ async function generateDrawing(theme) {
                 try {
                     console.log('    [generateDrawing] Gerando thumbnail...');
                     const originalKey = `drawings/customizados/${filename}`;
-                    await generateAndSaveThumbnail(imageBuffer, filename, originalKey);
-                    console.log('    [generateDrawing] Thumbnail gerado e salvo com sucesso');
+                    const thumbnailResult = await generateAndSaveThumbnail(imageBuffer, filename, originalKey);
+                    if (thumbnailResult.url) {
+                        console.log('    [generateDrawing] Thumbnail gerado e salvo no S3 com sucesso:', thumbnailResult.url);
+                    } else if (thumbnailResult.localPath) {
+                        console.log('    [generateDrawing] Thumbnail gerado e salvo localmente com sucesso:', thumbnailResult.localPath);
+                    } else {
+                        console.warn('    [generateDrawing] Thumbnail gerado mas não foi salvo (nenhum storage disponível)');
+                    }
                 } catch (thumbnailError) {
                     // Não falhar a geração do desenho se o thumbnail falhar
                     console.error('    [generateDrawing] Erro ao gerar thumbnail (não crítico):', thumbnailError.message);
+                    console.error('    [generateDrawing] Stack do erro do thumbnail:', thumbnailError.stack);
                 }
                 
                 return {

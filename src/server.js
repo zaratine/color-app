@@ -2,11 +2,60 @@
 
 // Servidor Express - ponto de entrada principal
 const express = require('express');
+const { execSync } = require('child_process');
 const { PORT, DRAWINGS_DIR, PUBLIC_DIR, apiKey } = require('./config');
 const requestLogger = require('./middleware/logger');
 const corsMiddleware = require('./middleware/cors');
 const apiRoutes = require('./routes/apiRoutes');
 const staticRoutes = require('./routes/staticRoutes');
+
+// Função para liberar a porta se estiver em uso (útil para nodemon)
+function killProcessOnPort(port) {
+    // Primeiro, matar processos nodemon órfãos (exceto o atual e o pai)
+    try {
+        // Usar ps e grep para encontrar processos nodemon
+        const psOutput = execSync(`ps aux | grep "[n]odemon.*server.js"`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        const lines = psOutput.trim().split('\n').filter(line => line.trim());
+        const nodemonPids = lines
+            .map(line => line.trim().split(/\s+/)[1]) // Extrair PID (segunda coluna)
+            .filter(pid => pid && pid !== process.pid.toString() && pid !== process.ppid.toString());
+        
+        if (nodemonPids.length > 0) {
+            console.log(`🔧 Encerrando ${nodemonPids.length} processo(s) nodemon órfão(s)...`);
+            for (const pid of nodemonPids) {
+                try {
+                    execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+                } catch (error) {
+                    // Processo pode já ter sido encerrado
+                }
+            }
+        }
+    } catch (error) {
+        // Nenhum processo nodemon encontrado, tudo bem
+    }
+    
+    // Depois, matar processos node na porta específica (servidores antigos)
+    try {
+        const output = execSync(`lsof -ti:${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        const pids = output
+            .trim()
+            .split('\n')
+            .filter(pid => pid && pid !== process.pid.toString() && pid !== process.ppid.toString());
+        
+        if (pids.length > 0) {
+            console.log(`🔧 Encerrando ${pids.length} processo(s) antigo(s) na porta ${port}...`);
+            for (const pid of pids) {
+                try {
+                    execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+                } catch (error) {
+                    // Processo pode já ter sido encerrado
+                }
+            }
+        }
+    } catch (error) {
+        // Nenhum processo encontrado na porta, tudo bem
+    }
+}
 
 // Inicializar Express
 const app = express();
@@ -126,7 +175,13 @@ module.exports = app;
 
 // Iniciar servidor apenas se não estiver no Vercel
 if (require.main === module) {
-    app.listen(PORT, () => {
+    // Liberar porta antes de iniciar (importante para nodemon)
+    killProcessOnPort(PORT);
+    
+    // Aguardar um pouco para garantir que a porta foi liberada
+    // Usar setImmediate para garantir que a porta foi liberada antes de tentar iniciar
+    setImmediate(() => {
+        const server = app.listen(PORT, () => {
         console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
         console.log(`📁 Desenhos sendo lidos de: ${DRAWINGS_DIR}`);
         
@@ -139,5 +194,51 @@ if (require.main === module) {
         }
         
         console.log(`\n✨ Acesse http://localhost:${PORT} no navegador\n`);
+    });
+
+    // Tratamento de erros no servidor
+    server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+            console.error(`\n❌ Erro: Porta ${PORT} ainda está em uso!`);
+            console.error(`   Tentando encerrar processos novamente...`);
+            killProcessOnPort(PORT);
+            console.error(`   Aguarde alguns segundos e o nodemon tentará novamente.`);
+            console.error(`   Ou execute manualmente: npm run kill-port\n`);
+            // Não fazer exit aqui, deixar o nodemon tentar novamente
+            setTimeout(() => process.exit(1), 2000);
+        } else {
+            console.error('❌ Erro ao iniciar servidor:', error);
+            process.exit(1);
+        }
+    });
+
+    // Handlers para encerramento limpo (importante para nodemon)
+    const gracefulShutdown = (signal) => {
+        console.log(`\n🛑 Recebido ${signal}. Encerrando servidor...`);
+        server.close(() => {
+            console.log('✅ Servidor encerrado corretamente.');
+            process.exit(0);
+        });
+
+        // Forçar encerramento após 10 segundos
+        setTimeout(() => {
+            console.error('⚠️  Forçando encerramento do servidor...');
+            process.exit(1);
+        }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    // Tratamento de erros não capturados
+    process.on('uncaughtException', (error) => {
+        console.error('❌ Erro não capturado:', error);
+        gracefulShutdown('uncaughtException');
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('❌ Promise rejeitada não tratada:', reason);
+        gracefulShutdown('unhandledRejection');
+    });
     });
 }
