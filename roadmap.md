@@ -1,8 +1,9 @@
 SEO
 - Fazer teste com Search Console
-- Testar velocidade
 - Implementar compatibilidade com dispositivos móveis
+- Implementar melhorias do PageSpeed para dispositivos móveis
 - Implementar og:image em todas as páginas -> <meta property="og:image" content="[url_image_here]">
+
 
 
 I18N
@@ -24,3 +25,4 @@ DONE
 - Thumb qualidade baixa
 - Imagens retornando quadradas e não widescreen. Forçar retorno (prop da chamada)
 - Cachear as thumbs 
+- GA4 instalado

@@ -184,13 +184,15 @@ async function generateDrawing(theme, category = null) {
         console.log('    [generateDrawing] Prompt criado (tamanho:', prompt.length, 'caracteres)');
         
         console.log('    [generateDrawing] Chamando OpenAI API...');
+        // Definir formato de saída
+        const outputFormat = 'webp'; // apenas para o modelo gpt-image-1
         const response = await openai.images.generate({
             model: 'gpt-image-1',
             //model: 'dall-e-3',
             prompt: prompt,
             background: 'opaque',
             quality: 'medium',
-            output_format: 'png', //apenas para o modelo gpt-image-1
+            output_format: outputFormat,
             //size: '1792x1024', // Aspect ratio 16:9 (aproximado)
             size: '1536x1024',
             //quality: 'standard',
@@ -224,8 +226,12 @@ async function generateDrawing(theme, category = null) {
         }
         console.log('    [generateDrawing] Imagem baixada (tamanho:', imageBuffer.length, 'bytes)');
         
-        // Gerar nome do arquivo
-        const filename = generateFilename(theme);
+        // Determinar formato e extensão baseado no output_format
+        const imageFormat = outputFormat === 'webp' ? 'webp' : 'png';
+        const contentType = outputFormat === 'webp' ? 'image/webp' : 'image/png';
+        
+        // Gerar nome do arquivo com a extensão correta
+        const filename = generateFilename(theme, imageFormat);
         
         // Determinar categoria (converter para minúsculo se fornecida)
         const normalizedCategory = category ? category.toLowerCase() : 'customizados';
@@ -235,7 +241,7 @@ async function generateDrawing(theme, category = null) {
             try {
                 console.log(`    [generateDrawing] Tentando fazer upload para S3 na categoria: ${normalizedCategory}...`);
                 const key = `drawings/${normalizedCategory}/${filename}`;
-                const s3Url = await _uploadObjectToS3(imageBuffer, key, 'image/png');
+                const s3Url = await _uploadObjectToS3(imageBuffer, key, contentType);
                 console.log('    [generateDrawing] Upload para S3 concluído com sucesso');
                 
                 // Gerar e salvar thumbnail automaticamente

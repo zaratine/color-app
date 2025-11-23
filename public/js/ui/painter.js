@@ -34,7 +34,7 @@ function removeTrailingNumbers(str) {
  */
 function getFriendlyDrawingName(drawing) {
     const filename = getDrawingFilename(drawing);
-    let nameWithoutExt = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
+    let nameWithoutExt = filename.replace(/\.(svg|png|jpg|jpeg|webp)$/i, '').replace(/_/g, ' ');
     // Remover números ao final
     nameWithoutExt = removeTrailingNumbers(nameWithoutExt);
     return capitalizeWords(nameWithoutExt);
@@ -424,7 +424,7 @@ function resizeCanvas() {
     canvas.style.height = `${displayHeight}px`;
 }
 
-// Função para carregar e renderizar a imagem PNG
+// Função para carregar e renderizar a imagem (PNG, WebP, etc.)
 async function loadImage() {
     const category = getCategoryFromUrl();
     const drawingSlug = getDrawingFromUrl(); // Agora é um slug, não o nome do arquivo
@@ -663,7 +663,52 @@ function downloadImage() {
     
     console.log('Iniciando download da imagem');
     
-    // Converter canvas para blob
+    // Obter nome do arquivo da URL
+    const category = getCategoryFromUrl();
+    const drawingSlug = getDrawingFromUrl();
+    
+    // Tentar obter nome do arquivo do desenho encontrado
+    let fileName = 'drawing';
+    let extension = 'png';
+    let mimeType = 'image/png';
+    
+    if (drawing) {
+        const filename = typeof drawing === 'string' ? drawing : (drawing.filename || drawing);
+        fileName = filename.replace(/\.[^/.]+$/, '');
+        const originalExt = filename.split('.').pop()?.toLowerCase() || 'png';
+        
+        // Determinar formato baseado na extensão original
+        if (originalExt === 'webp') {
+            extension = 'webp';
+            mimeType = 'image/webp';
+        } else {
+            extension = 'png';
+            mimeType = 'image/png';
+        }
+    } else if (drawingSlug) {
+        // Fallback: usar slug como nome
+        fileName = drawingSlug.replace(/-/g, '_');
+    }
+    
+    // Verificar se o navegador suporta WebP antes de tentar exportar
+    const supportsWebP = mimeType === 'image/webp' && 
+        (() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        })();
+    
+    // Se WebP não for suportado, usar PNG como fallback
+    if (mimeType === 'image/webp' && !supportsWebP) {
+        console.log('WebP não suportado pelo navegador, usando PNG como fallback');
+        extension = 'png';
+        mimeType = 'image/png';
+    }
+    
+    console.log('Nome do arquivo:', `${fileName}_colored.${extension}`, 'Formato:', mimeType);
+    
+    // Converter canvas para blob no formato apropriado
     canvas.toBlob((blob) => {
         if (!blob) {
             console.error('Erro ao converter canvas para blob');
@@ -672,25 +717,6 @@ function downloadImage() {
         
         // Criar URL temporária
         const url = URL.createObjectURL(blob);
-        
-        // Obter nome do arquivo da URL
-        const category = getCategoryFromUrl();
-        const drawingSlug = getDrawingFromUrl();
-        
-        // Tentar obter nome do arquivo do desenho encontrado
-        let fileName = 'drawing';
-        let extension = 'png';
-        
-        if (drawing) {
-            const filename = typeof drawing === 'string' ? drawing : (drawing.filename || drawing);
-            fileName = filename.replace(/\.[^/.]+$/, '');
-            extension = filename.split('.').pop() || 'png';
-        } else if (drawingSlug) {
-            // Fallback: usar slug como nome
-            fileName = drawingSlug.replace(/-/g, '_');
-        }
-        
-        console.log('Nome do arquivo:', `${fileName}_colored.${extension}`);
         
         // Criar link de download
         const downloadLink = document.createElement('a');
@@ -702,7 +728,67 @@ function downloadImage() {
         
         // Limpar URL temporária
         setTimeout(() => URL.revokeObjectURL(url), 100);
-    }, 'image/png');
+    }, mimeType);
+}
+
+// Função para fazer download da imagem original do S3
+async function downloadOriginalImage() {
+    if (!drawing) {
+        console.error('Desenho não disponível para download');
+        return;
+    }
+    
+    console.log('Iniciando download da imagem original');
+    
+    // Obter URL original do desenho
+    const originalImageUrl = getDrawingUrl(drawing);
+    
+    if (!originalImageUrl) {
+        console.error('URL original não disponível');
+        alert('Imagem original não disponível para download');
+        return;
+    }
+    
+    // Se for URL do S3, usar proxy para fazer o download
+    let downloadUrl = originalImageUrl;
+    if (isS3Url(originalImageUrl)) {
+        // Usar o endpoint de proxy para fazer o download
+        downloadUrl = `/api/proxy-image?url=${encodeURIComponent(originalImageUrl)}`;
+    }
+    
+    // Obter nome do arquivo
+    const filename = typeof drawing === 'string' ? drawing : (drawing.filename || drawing);
+    let fileName = filename.replace(/\.[^/.]+$/, '');
+    const extension = filename.split('.').pop()?.toLowerCase() || 'png';
+    
+    try {
+        // Fazer fetch da imagem
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+            throw new Error(`Erro ao baixar imagem: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        
+        // Criar URL temporária
+        const url = URL.createObjectURL(blob);
+        
+        // Criar link de download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `${fileName}.${extension}`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Limpar URL temporária
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        
+        console.log('Download da imagem original concluído');
+    } catch (error) {
+        console.error('Erro ao baixar imagem original:', error);
+        alert('Erro ao baixar imagem original. Por favor, tente novamente.');
+    }
 }
 
 // Função para inicializar o botão de download
@@ -726,12 +812,34 @@ function initDownloadButton() {
     }
 }
 
+// Função para inicializar o botão de download blank
+function initDownloadBlankButton() {
+    const downloadBlankLink = document.getElementById('download-blank-link');
+    if (downloadBlankLink) {
+        // Remover event listeners anteriores se houver
+        downloadBlankLink.onclick = null;
+        // Clonar o elemento para remover todos os event listeners
+        const newDownloadBlankLink = downloadBlankLink.cloneNode(true);
+        downloadBlankLink.parentNode.replaceChild(newDownloadBlankLink, downloadBlankLink);
+        
+        newDownloadBlankLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Download blank button clicked');
+            downloadOriginalImage();
+        });
+    } else {
+        console.error('Download blank link not found');
+    }
+}
+
 // Inicializar quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('color-grid') && document.getElementById('canvas-container')) {
         updateBackLink();
         initColorPalette();
         initDownloadButton();
+        initDownloadBlankButton();
         loadImage();
         
         // Ajustar tamanho quando a janela for redimensionada
