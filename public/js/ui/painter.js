@@ -1,7 +1,7 @@
 // UI - Lógica de pintura/preenchimento para imagens PNG usando Canvas
 
 import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl, getProxyUrl, isS3Url, getDrawingBySlug } from '../utils/urlUtils.js';
-import { getDrawingUrl, getDrawingFilename } from '../services/drawingsService.js';
+import { getDrawingUrl, getDrawingFilename, getCategoryData } from '../services/drawingsService.js';
 
 /**
  * Capitaliza a primeira letra de cada palavra em uma string
@@ -32,24 +32,79 @@ function getFriendlyDrawingName(drawing) {
  * Atualiza o título da página, h1 e meta description com o nome amigável do desenho
  * @param {string|Object} drawing - Nome do arquivo ou objeto do desenho
  */
-function updatePageMetadata(drawing) {
+async function updatePageMetadata(drawing) {
     const friendlyName = getFriendlyDrawingName(drawing);
+    const category = getCategoryFromUrl();
+    
+    // Atualizar breadcrumb com categoria
+    if (category) {
+        try {
+            const categoryData = await getCategoryData(category);
+            const categoryFriendlyName = categoryData ? categoryData.displayName : capitalizeWords(category);
+            
+            const breadcrumbCategory = document.getElementById('breadcrumb-category');
+            const breadcrumbCategoryLink = document.getElementById('breadcrumb-category-link');
+            if (breadcrumbCategory && breadcrumbCategoryLink) {
+                breadcrumbCategoryLink.textContent = categoryFriendlyName;
+                breadcrumbCategoryLink.href = getCategoryUrl(category);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar dados da categoria para breadcrumb:', error);
+        }
+    }
+    
+    // Breadcrumb já foi atualizado pelo script inline no HTML
+    // Apenas atualizar se o nome amigável do desenho for diferente do slug
+    const breadcrumbDrawing = document.getElementById('breadcrumb-drawing');
+    if (breadcrumbDrawing) {
+        const span = breadcrumbDrawing.querySelector('span');
+        if (span && span.textContent !== friendlyName) {
+            // Atualizar apenas se o nome real for diferente do slug
+            span.textContent = friendlyName;
+        }
+    }
     
     // Atualizar título da página
-    document.title = `${friendlyName} Coloring Page – Print or Color Online`;
+    const pageTitle = `${friendlyName} Coloring Page – Print or Color Online`;
+    document.title = pageTitle;
     
-    // Atualizar h1
+    // H1 já foi atualizado pelo script inline no HTML
+    // Apenas atualizar se o nome amigável do desenho for diferente do slug
     const h1 = document.getElementById('drawing-title');
     if (h1) {
-        h1.textContent = `${friendlyName} Coloring Page`;
+        const currentText = h1.textContent.replace(' Coloring Page', '');
+        if (currentText !== friendlyName) {
+            // Atualizar apenas se o nome real for diferente do slug
+            h1.textContent = `${friendlyName} Coloring Page`;
+        }
         h1.style.display = 'block';
     }
     
     // Atualizar meta description
     const metaDescription = document.getElementById('meta-description');
+    const descriptionText = `Color online or download a free ${friendlyName} coloring page for kids. High-resolution drawing ready to print or color online. Fun and easy activity for children between 2 and 6 years old.`;
     if (metaDescription) {
-        metaDescription.content = `Color online or download a free ${friendlyName} coloring page for kids. High-resolution drawing ready to print or color online. Fun and easy activity for children between 2 and 6 years old.`;
+        metaDescription.content = descriptionText;
     }
+    
+    // Atualizar Open Graph meta tags
+    let ogTitle = document.getElementById('og-title');
+    if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.id = 'og-title';
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+    }
+    ogTitle.content = pageTitle;
+    
+    let ogDescription = document.getElementById('og-description');
+    if (!ogDescription) {
+        ogDescription = document.createElement('meta');
+        ogDescription.id = 'og-description';
+        ogDescription.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDescription);
+    }
+    ogDescription.content = descriptionText;
 }
 
 // Paleta de 24 cores para crianças
@@ -385,7 +440,7 @@ async function loadImage() {
         
         if (drawing) {
             // Atualizar metadados da página com o nome amigável
-            updatePageMetadata(drawing);
+            await updatePageMetadata(drawing);
             
             // Obter URL do desenho encontrado
             const imageUrl = getDrawingUrl(drawing);
@@ -404,14 +459,14 @@ async function loadImage() {
                 // Tentar criar um desenho temporário para obter o nome amigável do slug
                 if (drawingSlug) {
                     const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
-                    updatePageMetadata(tempDrawing);
+                    await updatePageMetadata(tempDrawing);
                 }
             } else {
                 // Último fallback: usar slug como nome de arquivo (pode não funcionar)
                 imagePath = `drawings/${category}/${drawingSlug}`;
                 if (drawingSlug) {
                     const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
-                    updatePageMetadata(tempDrawing);
+                    await updatePageMetadata(tempDrawing);
                 }
             }
         }

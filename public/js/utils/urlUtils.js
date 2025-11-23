@@ -32,19 +32,19 @@ export function getUrlParams() {
 
 /**
  * Obtém o nome da categoria da URL
- * Suporta tanto o formato antigo (?cat=...) quanto o novo (/en/:category ou /en/paint/:category/:drawing)
+ * Suporta tanto o formato antigo (?cat=...) quanto o novo (/en/:category ou /en/:category/:drawing)
  * @returns {string|null} Nome da categoria ou null se não existir
  */
 export function getCategoryFromUrl() {
     const path = window.location.pathname;
     
-    // Tentar novo formato: /en/paint/:category/:drawing
-    const paintMatch = path.match(/^\/en\/paint\/([^\/]+)/);
-    if (paintMatch) {
-        return decodeURIComponent(paintMatch[1]);
+    // Tentar novo formato: /en/:category/:drawing
+    const drawingMatch = path.match(/^\/en\/([^\/]+)\/([^\/]+)/);
+    if (drawingMatch) {
+        return decodeURIComponent(drawingMatch[1]);
     }
     
-    // Tentar novo formato: /en/:category (mas não /en/paint)
+    // Tentar novo formato: /en/:category (categoria única)
     const categoryMatch = path.match(/^\/en\/([^\/]+)$/);
     if (categoryMatch) {
         return decodeURIComponent(categoryMatch[1]);
@@ -57,14 +57,14 @@ export function getCategoryFromUrl() {
 
 /**
  * Obtém o slug do desenho da URL
- * Suporta tanto o formato antigo (?drawing=...) quanto o novo (/en/paint/:category/:drawing)
+ * Suporta tanto o formato antigo (?drawing=...) quanto o novo (/en/:category/:drawing)
  * @returns {string|null} Slug do desenho ou null se não existir
  */
 export function getDrawingFromUrl() {
     const path = window.location.pathname;
     
-    // Tentar novo formato: /en/paint/:category/:drawing
-    const newFormatMatch = path.match(/^\/en\/paint\/[^\/]+\/([^\/]+)/);
+    // Tentar novo formato: /en/:category/:drawing
+    const newFormatMatch = path.match(/^\/en\/[^\/]+\/([^\/]+)/);
     if (newFormatMatch) {
         return decodeURIComponent(newFormatMatch[1]);
     }
@@ -97,7 +97,7 @@ export function getPaintUrl(categoryName, drawingName, imageUrl = null) {
     const slug = filenameToSlug(drawingName);
     const normalizedCategory = categoryName.toLowerCase().trim();
     
-    return `/en/paint/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(slug)}`;
+    return `/en/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(slug)}`;
 }
 
 /**

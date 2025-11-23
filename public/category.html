@@ -6,6 +6,9 @@
     <title>Color - Drawings</title>
     <meta name="description" content="Free coloring pages for kids! Print or Color Online. Explore our collection of coloring pages.">
     <meta id="meta-title" name="title" content="Color - Drawings">
+    <meta property="og:type" content="website">
+    <meta property="og:title" id="og-title" content="Color - Drawings">
+    <meta property="og:description" id="og-description" content="Free coloring pages for kids! Print or Color Online. Explore our collection of coloring pages.">
     <link rel="canonical" href="">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/styles/main.css">
@@ -43,6 +46,10 @@
                     if (title) {
                         title.textContent = friendlyName + ' Coloring Pages';
                     }
+                    const breadcrumbCategory = document.getElementById('breadcrumb-category');
+                    if (breadcrumbCategory) {
+                        breadcrumbCategory.textContent = friendlyName;
+                    }
                 }
             }
             
@@ -59,11 +66,32 @@
     <main class="container">
         <header>
             <a href="/" class="back-link">← Back</a>
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <ol>
+                    <li><a href="/">Home</a></li>
+                    <li id="breadcrumb-category" aria-current="page">Category</li>
+                </ol>
+            </nav>
             <h1 id="category-title">Drawings</h1>
         </header>
+        
+        <section class="category-description">
+            <p>
+                Explore our collection of <strong id="category-friendly-name">FRIENDLY_NAME Coloring Pages</strong> designed for kids from 2 to 6 years old.
+                Print your favorite <span id="category-friendly-name-inline">FRIENDLY_NAME</span> or color them online using our digital tools. 
+                All images are high-resolution and completely free!
+            </p>
+        </section>
         <div id="drawings-grid" class="drawings-grid">
             <!-- Desenhos serão carregados aqui -->
         </div>
+        
+        <section class="other-categories-section">
+            <h2 class="other-categories-title">Other Categories</h2>
+            <div id="other-categories-grid" class="categories-grid">
+                <!-- Categorias aleatórias serão carregadas aqui -->
+            </div>
+        </section>
     </main>
     <script type="module" src="/js/ui/drawings.js"></script>
     <script type="module" src="/js/app.js"></script>

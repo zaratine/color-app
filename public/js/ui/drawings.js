@@ -1,7 +1,7 @@
 // UI - Renderização de desenhos de uma categoria
 
-import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl, getThumbnailUrl } from '../services/drawingsService.js';
-import { getCategoryFromUrl, getPaintUrl, getProxyUrl, isS3Url } from '../utils/urlUtils.js';
+import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl, getThumbnailUrl, getAllCategories } from '../services/drawingsService.js';
+import { getCategoryFromUrl, getPaintUrl, getProxyUrl, isS3Url, getCategoryUrl } from '../utils/urlUtils.js';
 
 /**
  * Capitaliza a primeira letra de cada palavra em uma string
@@ -44,6 +44,25 @@ export async function loadDrawings() {
         const categoryData = await getCategoryData(category);
         const friendlyName = categoryData ? categoryData.displayName : capitalizeWords(category);
         
+        // Atualizar breadcrumb
+        const breadcrumbCategory = document.getElementById('breadcrumb-category');
+        if (breadcrumbCategory) {
+            breadcrumbCategory.textContent = friendlyName;
+        }
+        
+        // Atualizar seção de descrição da categoria
+        const categoryDescription = document.querySelector('.category-description');
+        if (categoryDescription) {
+            const friendlyNameElements = categoryDescription.querySelectorAll('#category-friendly-name, #category-friendly-name-inline');
+            friendlyNameElements.forEach(el => {
+                if (el.id === 'category-friendly-name') {
+                    el.textContent = `${friendlyName} Coloring Pages`;
+                } else {
+                    el.textContent = friendlyName;
+                }
+            });
+        }
+        
         // Atualizar título da página e meta tags
         const pageTitle = `${friendlyName} Coloring Pages – Print or Color Online`;
         document.title = pageTitle;
@@ -65,7 +84,27 @@ export async function loadDrawings() {
             metaDescription.name = 'description';
             document.head.appendChild(metaDescription);
         }
-        metaDescription.content = `Free ${friendlyName.toLowerCase()} coloring pages for kids! Print or Color Online. Explore our collection of ${friendlyName.toLowerCase()} coloring pages. High-resolution drawings ready to color.`;
+        const descriptionText = `Free ${friendlyName.toLowerCase()} coloring pages for kids! Print or Color Online. Explore our collection of ${friendlyName.toLowerCase()} coloring pages. High-resolution drawings ready to color.`;
+        metaDescription.content = descriptionText;
+        
+        // Atualizar Open Graph meta tags
+        let ogTitle = document.getElementById('og-title');
+        if (!ogTitle) {
+            ogTitle = document.createElement('meta');
+            ogTitle.id = 'og-title';
+            ogTitle.setAttribute('property', 'og:title');
+            document.head.appendChild(ogTitle);
+        }
+        ogTitle.content = pageTitle;
+        
+        let ogDescription = document.getElementById('og-description');
+        if (!ogDescription) {
+            ogDescription = document.createElement('meta');
+            ogDescription.id = 'og-description';
+            ogDescription.setAttribute('property', 'og:description');
+            document.head.appendChild(ogDescription);
+        }
+        ogDescription.content = descriptionText;
         
         // Atualizar canonical URL
         let canonicalLink = document.querySelector('link[rel="canonical"]');
@@ -115,14 +154,88 @@ export async function loadDrawings() {
             drawingCard.innerHTML = `
                 <img src="${thumbnailPath}" alt="${drawingName}" class="drawing-thumbnail"
                      onerror="${onErrorHandler}">
-                <p class="drawing-name">${drawingName}</p>
+                <h2 class="drawing-name">${drawingName}</h2>
             `;
 
             grid.appendChild(drawingCard);
         });
+        
+        // Carregar outras categorias após carregar os desenhos
+        await loadOtherCategories(category);
     } catch (error) {
         console.error('Erro ao carregar desenhos:', error);
         grid.innerHTML = '<p>Error loading drawings. Please check if the server is running.</p>';
+    }
+}
+
+/**
+ * Carrega e renderiza 3 categorias aleatórias (excluindo a categoria atual)
+ * @param {string} currentCategory - Nome da categoria atual
+ */
+async function loadOtherCategories(currentCategory) {
+    const grid = document.getElementById('other-categories-grid');
+    if (!grid) return;
+
+    try {
+        const allCategories = await getAllCategories();
+        
+        // Filtrar categorias que têm desenhos e excluir a categoria atual
+        const availableCategories = allCategories.filter(
+            cat => cat.drawings.length > 0 && cat.name !== currentCategory
+        );
+        
+        if (availableCategories.length === 0) {
+            // Se não há outras categorias, esconder a seção
+            const section = document.querySelector('.other-categories-section');
+            if (section) {
+                section.style.display = 'none';
+            }
+            return;
+        }
+        
+        // Selecionar 3 categorias aleatórias
+        const shuffled = availableCategories.sort(() => 0.5 - Math.random());
+        const randomCategories = shuffled.slice(0, 3);
+        
+        grid.innerHTML = '';
+        
+        for (const category of randomCategories) {
+            const firstDrawing = category.drawings[0];
+            
+            // Obter URL do thumbnail e URL original da imagem
+            const thumbnailPath = getThumbnailUrl(firstDrawing, category.name);
+            const imageUrl = getDrawingUrl(firstDrawing);
+            
+            // Se for URL do S3 direta, tentar carregar direto. Se der 404, fazer fallback para /api/thumbnail
+            const isS3Thumbnail = thumbnailPath && thumbnailPath.includes('.s3.') && thumbnailPath.includes('.amazonaws.com');
+            const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : null;
+            
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'category-card';
+            categoryCard.onclick = () => {
+                window.location.href = getCategoryUrl(category.name);
+            };
+
+            // Se for URL do S3, fazer fallback para API quando der erro. Caso contrário, esconder imagem
+            const onErrorHandler = isS3Thumbnail && fallbackUrl
+                ? `this.onerror=null; this.src='${fallbackUrl}';`
+                : `this.style.display='none';`;
+
+            categoryCard.innerHTML = `
+                <img src="${thumbnailPath}" alt="${category.displayName}" class="category-thumbnail" 
+                     onerror="${onErrorHandler}">
+                <h2 class="category-name">${category.displayName}</h2>
+            `;
+
+            grid.appendChild(categoryCard);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar outras categorias:', error);
+        // Em caso de erro, esconder a seção
+        const section = document.querySelector('.other-categories-section');
+        if (section) {
+            section.style.display = 'none';
+        }
     }
 }
 
