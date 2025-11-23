@@ -1,6 +1,6 @@
 // UI - Renderização de desenhos de uma categoria
 
-import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl } from '../services/drawingsService.js';
+import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl, getThumbnailUrl } from '../services/drawingsService.js';
 import { getCategoryFromUrl, getPaintUrl, getProxyUrl, isS3Url } from '../utils/urlUtils.js';
 
 /**
@@ -52,14 +52,12 @@ export async function loadDrawings() {
             const filename = getDrawingFilename(drawing);
             const imageUrl = getDrawingUrl(drawing);
             
-            // Obter URL ou caminho da imagem
-            let thumbnailPath;
-            if (imageUrl) {
-                // Se for URL do S3, usar proxy para evitar problemas de CORS
-                thumbnailPath = isS3Url(imageUrl) ? getProxyUrl(imageUrl) : imageUrl;
-            } else {
-                // Usar caminho relativo (filesystem)
-                thumbnailPath = `drawings/${category}/${filename}`;
+            // Obter URL do thumbnail
+            let thumbnailPath = getThumbnailUrl(drawing, category);
+            
+            // Se for URL do S3 e não for a rota /api/thumbnail, usar proxy para evitar problemas de CORS
+            if (imageUrl && isS3Url(imageUrl) && !thumbnailPath.startsWith('/api/thumbnail')) {
+                thumbnailPath = getProxyUrl(thumbnailPath);
             }
             
             const drawingName = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');

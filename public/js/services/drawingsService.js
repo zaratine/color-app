@@ -90,6 +90,47 @@ export function getDrawingUrl(drawing) {
 }
 
 /**
+ * Obtém a URL do thumbnail de um desenho
+ * @param {string|Object} drawing - Desenho (string ou objeto {filename, url, thumbnailUrl})
+ * @param {string} categoryName - Nome da categoria (opcional, necessário para filesystem)
+ * @returns {string} URL do thumbnail ou URL da imagem original como fallback
+ */
+export function getThumbnailUrl(drawing, categoryName = null) {
+    // Se for objeto e tiver thumbnailUrl, usar diretamente
+    if (typeof drawing === 'object' && drawing.thumbnailUrl) {
+        return drawing.thumbnailUrl;
+    }
+    
+    // Se for objeto com URL do S3, construir URL do thumbnail
+    if (typeof drawing === 'object' && drawing.url) {
+        const url = drawing.url;
+        // Se for URL do S3, construir URL do thumbnail
+        if (url.includes('.s3.') && url.includes('.amazonaws.com')) {
+            // Extrair nome do arquivo da URL
+            const urlParts = url.split('/');
+            const filename = urlParts[urlParts.length - 1];
+            const thumbnailFilename = `thumb_${filename}`;
+            // Substituir o nome do arquivo na URL
+            const thumbnailUrl = url.replace(filename, thumbnailFilename);
+            return `/api/thumbnail?url=${encodeURIComponent(url)}`;
+        }
+    }
+    
+    // Para filesystem, construir caminho do thumbnail
+    if (typeof drawing === 'string' || (typeof drawing === 'object' && drawing.filename)) {
+        const filename = typeof drawing === 'string' ? drawing : drawing.filename;
+        const thumbnailFilename = `thumb_${filename}`;
+        if (categoryName) {
+            return `drawings/${categoryName}/${thumbnailFilename}`;
+        }
+        return `drawings/customizados/${thumbnailFilename}`;
+    }
+    
+    // Fallback: retornar URL original se disponível
+    return getDrawingUrl(drawing) || '';
+}
+
+/**
  * Obtém dados de uma categoria específica
  * @param {string} categoryName - Nome da categoria
  * @returns {Promise<Object|null>} Dados da categoria ou null se não existir

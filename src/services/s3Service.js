@@ -2,6 +2,7 @@
 const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { config } = require('../config');
 const { formatDisplayName } = require('../utils/stringUtils');
+const { getThumbnailKey, getThumbnailFilename } = require('./thumbnailService');
 
 // Configurar cliente S3
 // Prioridade: variável de ambiente > config.js
@@ -220,6 +221,12 @@ async function getDrawingsFromS3() {
                 console.log(`   ⏭️  Ignorado (não é imagem): ${key}`);
                 return;
             }
+            
+            // Ignorar thumbnails na listagem principal (só queremos as imagens originais)
+            if (key.includes('/thumb_') || key.endsWith('thumb_')) {
+                console.log(`   ⏭️  Ignorado (é thumbnail): ${key}`);
+                return;
+            }
 
             // Extrair categoria e nome do arquivo
             // Formato esperado: drawings/{categoria}/{arquivo}
@@ -243,9 +250,15 @@ async function getDrawingsFromS3() {
 
                 // Adicionar arquivo à categoria com URL completa do S3
                 const publicUrl = getS3PublicUrl(key);
+                
+                // Gerar URL do thumbnail
+                const thumbnailKey = getThumbnailKey(key);
+                const thumbnailUrl = getS3PublicUrl(thumbnailKey);
+                
                 database[category].drawings.push({
                     filename: filename,
-                    url: publicUrl
+                    url: publicUrl,
+                    thumbnailUrl: thumbnailUrl
                 });
                 console.log(`   ➕ Arquivo adicionado à categoria "${category}"`);
             } else {
@@ -292,6 +305,16 @@ function getS3PublicUrl(key) {
     // Remover barra inicial se houver
     const cleanKey = key.startsWith('/') ? key.substring(1) : key;
     return `https://${bucketName}.s3.${region}.amazonaws.com/${cleanKey}`;
+}
+
+/**
+ * Gera URL pública do thumbnail de uma imagem no S3
+ * @param {string} originalKey - Chave S3 da imagem original (ex: "drawings/animais/Cachorro.png")
+ * @returns {string} URL pública do thumbnail
+ */
+function getThumbnailUrl(originalKey) {
+    const thumbnailKey = getThumbnailKey(originalKey);
+    return getS3PublicUrl(thumbnailKey);
 }
 
 /**
@@ -362,6 +385,7 @@ module.exports = {
     listObjects,
     getDrawingsFromS3,
     getS3PublicUrl,
+    getThumbnailUrl,
     extractKeyFromUrl,
     getObjectFromS3
 };

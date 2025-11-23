@@ -1,6 +1,6 @@
 // UI - Renderização de categorias
 
-import { getAllCategories } from '../services/drawingsService.js';
+import { getAllCategories, getThumbnailUrl } from '../services/drawingsService.js';
 import { getCategoryUrl } from '../utils/urlUtils.js';
 
 /**
@@ -37,16 +37,8 @@ export async function loadCategories() {
         for (const category of categoriesWithDrawings) {
             const firstDrawing = category.drawings[0];
             
-            // Obter URL ou caminho da imagem
-            let thumbnailPath;
-            if (typeof firstDrawing === 'object' && firstDrawing.url) {
-                // Usar URL do S3
-                thumbnailPath = firstDrawing.url;
-            } else {
-                // Usar caminho relativo (filesystem)
-                const filename = typeof firstDrawing === 'string' ? firstDrawing : firstDrawing.filename;
-                thumbnailPath = `drawings/${category.name}/${filename}`;
-            }
+            // Obter URL do thumbnail
+            const thumbnailPath = getThumbnailUrl(firstDrawing, category.name);
 
             const categoryCard = document.createElement('div');
             categoryCard.className = 'category-card';

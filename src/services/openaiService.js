@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { openai, CUSTOM_DIR, apiKey } = require('../config');
 const { generateFilename } = require('../utils/fileUtils');
-const { uploadToS3, isS3Available } = require('./s3Service');
+const { uploadToS3, isS3Available, extractKeyFromUrl } = require('./s3Service');
+const { generateAndSaveThumbnail } = require('./thumbnailService');
 
 // Prompt para geração de desenho
 const DRAWING_PROMPT = `You are an illustration model that generates kids' coloring pages.
@@ -161,6 +162,18 @@ async function generateDrawing(theme) {
                 console.log('    [generateDrawing] Tentando fazer upload para S3...');
                 const s3Url = await uploadToS3(imageBuffer, filename, 'image/png');
                 console.log('    [generateDrawing] Upload para S3 concluído com sucesso');
+                
+                // Gerar e salvar thumbnail automaticamente
+                try {
+                    console.log('    [generateDrawing] Gerando thumbnail...');
+                    const originalKey = `drawings/customizados/${filename}`;
+                    await generateAndSaveThumbnail(imageBuffer, filename, originalKey);
+                    console.log('    [generateDrawing] Thumbnail gerado e salvo com sucesso');
+                } catch (thumbnailError) {
+                    // Não falhar a geração do desenho se o thumbnail falhar
+                    console.error('    [generateDrawing] Erro ao gerar thumbnail (não crítico):', thumbnailError.message);
+                }
+                
                 return {
                     filename: filename,
                     url: s3Url,
@@ -184,6 +197,16 @@ async function generateDrawing(theme) {
             }
             fs.writeFileSync(filePath, imageBuffer);
             console.log('    [generateDrawing] Arquivo salvo localmente com sucesso');
+            
+            // Gerar e salvar thumbnail localmente também
+            try {
+                console.log('    [generateDrawing] Gerando thumbnail localmente...');
+                await generateAndSaveThumbnail(imageBuffer, filename);
+                console.log('    [generateDrawing] Thumbnail gerado e salvo localmente com sucesso');
+            } catch (thumbnailError) {
+                // Não falhar a geração do desenho se o thumbnail falhar
+                console.error('    [generateDrawing] Erro ao gerar thumbnail localmente (não crítico):', thumbnailError.message);
+            }
             
             // Retornar apenas filename para compatibilidade com código existente
             return {
