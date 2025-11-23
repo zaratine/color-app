@@ -17,6 +17,17 @@ function capitalizeWords(str) {
 }
 
 /**
+ * Remove números ao final de uma string
+ * @param {string} str - String a ser processada
+ * @returns {string} String sem números ao final
+ */
+function removeTrailingNumbers(str) {
+    if (!str) return '';
+    // Remove espaços/hífens/underscores seguidos de números no final
+    return str.replace(/[\s_-]+\d+$/, '');
+}
+
+/**
  * Carrega e renderiza os desenhos de uma categoria
  */
 export async function loadDrawings() {
@@ -136,9 +147,10 @@ export async function loadDrawings() {
             const isS3Thumbnail = thumbnailPath && thumbnailPath.includes('.s3.') && thumbnailPath.includes('.amazonaws.com');
             const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3E?%3C/text%3E%3C/svg%3E';
             
-            const drawingName = capitalizeWords(
-                filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ')
-            );
+            let nameWithoutExt = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
+            // Remover números ao final
+            nameWithoutExt = removeTrailingNumbers(nameWithoutExt);
+            const drawingName = capitalizeWords(nameWithoutExt);
 
             const drawingCard = document.createElement('div');
             drawingCard.className = 'drawing-card';

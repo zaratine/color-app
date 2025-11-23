@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { openai, CUSTOM_DIR, apiKey } = require('../config');
 const { generateFilename } = require('../utils/fileUtils');
-const { uploadToS3, isS3Available, extractKeyFromUrl } = require('./s3Service');
+const { uploadToS3, isS3Available, extractKeyFromUrl, _uploadObjectToS3 } = require('./s3Service');
 const { generateAndSaveThumbnail } = require('./thumbnailService');
 
 // Prompt para geração de desenho
@@ -99,7 +99,7 @@ function downloadImage(imageUrl) {
 }
 
 // Função para gerar desenho usando OpenAI
-async function generateDrawing(theme) {
+async function generateDrawing(theme, category = null) {
     // Validar se a chave da API está configurada
     if (!apiKey || apiKey === 'sua-chave-aqui') {
         const error = new Error('OPENAI_API_KEY não configurada. Por favor, edite o arquivo config.js e adicione sua chave da API.');
@@ -126,7 +126,6 @@ async function generateDrawing(theme) {
         });
 
         console.log('    [generateDrawing] Resposta da OpenAI recebida');
-        console.log('    [generateDrawing] Estrutura da resposta:', JSON.stringify(response, null, 2));
         
         // Verificar se a resposta tem dados
         if (!response || !response.data || !Array.isArray(response.data) || response.data.length === 0) {
@@ -156,18 +155,21 @@ async function generateDrawing(theme) {
         // Gerar nome do arquivo
         const filename = generateFilename(theme);
         
+        // Determinar categoria (converter para minúsculo se fornecida)
+        const normalizedCategory = category ? category.toLowerCase() : 'customizados';
+        
         // Tentar fazer upload para S3 primeiro (se configurado)
         if (isS3Available()) {
             try {
-                console.log('    [generateDrawing] Tentando fazer upload para S3...');
-                const s3Url = await uploadToS3(imageBuffer, filename, 'image/png');
+                console.log(`    [generateDrawing] Tentando fazer upload para S3 na categoria: ${normalizedCategory}...`);
+                const key = `drawings/${normalizedCategory}/${filename}`;
+                const s3Url = await _uploadObjectToS3(imageBuffer, key, 'image/png');
                 console.log('    [generateDrawing] Upload para S3 concluído com sucesso');
                 
                 // Gerar e salvar thumbnail automaticamente
                 try {
                     console.log('    [generateDrawing] Gerando thumbnail...');
-                    const originalKey = `drawings/customizados/${filename}`;
-                    const thumbnailResult = await generateAndSaveThumbnail(imageBuffer, filename, originalKey);
+                    const thumbnailResult = await generateAndSaveThumbnail(imageBuffer, filename, key);
                     if (thumbnailResult.url) {
                         console.log('    [generateDrawing] Thumbnail gerado e salvo no S3 com sucesso:', thumbnailResult.url);
                     } else if (thumbnailResult.localPath) {
@@ -218,7 +220,7 @@ async function generateDrawing(theme) {
             // Retornar apenas filename para compatibilidade com código existente
             return {
                 filename: filename,
-                url: `/drawings/customizados/${filename}`,
+                url: `/drawings/${normalizedCategory}/${filename}`,
                 storage: 'local'
             };
         } catch (error) {

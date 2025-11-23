@@ -52,6 +52,7 @@ Substitua o conteúdo JSON completo pelo seguinte (substitua `colop-app-drawings
             ],
             "Resource": [
                 "arn:aws:s3:::colop-app-drawings/drawings/customizados/*",
+                "arn:aws:s3:::colop-app-drawings/drawings/*/*",
                 "arn:aws:s3:::colop-app-drawings/drawings/*/thumb_*"
             ]
         },
@@ -88,9 +89,10 @@ Substitua o conteúdo JSON completo pelo seguinte (substitua `colop-app-drawings
 ```
 
 **O que mudou:**
-- A linha `"Resource": "arn:aws:s3:::colop-app-drawings/drawings/customizados/*"` foi substituída por um array com duas entradas:
+- A linha `"Resource": "arn:aws:s3:::colop-app-drawings/drawings/customizados/*"` foi substituída por um array com três entradas:
   - `"arn:aws:s3:::colop-app-drawings/drawings/customizados/*"` - mantém permissão para uploads em customizados
-  - `"arn:aws:s3:::colop-app-drawings/drawings/*/thumb_*"` - **NOVO**: permite salvar thumbnails em qualquer pasta dentro de `drawings/`
+  - `"arn:aws:s3:::colop-app-drawings/drawings/*/*"` - **NOVO**: permite salvar imagens em qualquer categoria (food, vehicles, space, etc.)
+  - `"arn:aws:s3:::colop-app-drawings/drawings/*/thumb_*"` - permite salvar thumbnails em qualquer pasta dentro de `drawings/`
 - **NOVO Statement**: Adicionada permissão `s3:DeleteObject` para excluir thumbnails em qualquer pasta dentro de `drawings/`
 
 ### Passo 5: Salvar a Política
@@ -119,6 +121,7 @@ A política anterior permitia `s3:PutObject` apenas em:
 A nova política permite:
 - **`s3:PutObject`** em:
   - `drawings/customizados/*` (mantém compatibilidade)
+  - `drawings/*/*` (permite salvar imagens em qualquer categoria: food, vehicles, space, etc.)
   - `drawings/*/thumb_*` (permite salvar thumbnails em qualquer categoria)
 - **`s3:DeleteObject`** em:
   - `drawings/*/thumb_*` (permite excluir thumbnails em qualquer categoria)

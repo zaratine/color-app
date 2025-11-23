@@ -50,6 +50,15 @@
                     if (breadcrumbCategory) {
                         breadcrumbCategory.textContent = friendlyName;
                     }
+                    // Atualizar elementos do parágrafo de introdução imediatamente
+                    const categoryFriendlyName = document.getElementById('category-friendly-name');
+                    if (categoryFriendlyName) {
+                        categoryFriendlyName.textContent = friendlyName + ' Coloring Pages';
+                    }
+                    const categoryFriendlyNameInline = document.getElementById('category-friendly-name-inline');
+                    if (categoryFriendlyNameInline) {
+                        categoryFriendlyNameInline.textContent = friendlyName;
+                    }
                 }
             }
             

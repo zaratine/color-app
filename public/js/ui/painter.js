@@ -17,15 +17,27 @@ function capitalizeWords(str) {
 }
 
 /**
+ * Remove números ao final de uma string
+ * @param {string} str - String a ser processada
+ * @returns {string} String sem números ao final
+ */
+function removeTrailingNumbers(str) {
+    if (!str) return '';
+    // Remove espaços/hífens/underscores seguidos de números no final
+    return str.replace(/[\s_-]+\d+$/, '');
+}
+
+/**
  * Obtém o nome amigável de um desenho a partir do nome do arquivo
  * @param {string|Object} drawing - Nome do arquivo ou objeto do desenho
  * @returns {string} Nome amigável do desenho
  */
 function getFriendlyDrawingName(drawing) {
     const filename = getDrawingFilename(drawing);
-    return capitalizeWords(
-        filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ')
-    );
+    let nameWithoutExt = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
+    // Remover números ao final
+    nameWithoutExt = removeTrailingNumbers(nameWithoutExt);
+    return capitalizeWords(nameWithoutExt);
 }
 
 /**

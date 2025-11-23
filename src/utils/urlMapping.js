@@ -10,7 +10,11 @@ function filenameToSlug(filename) {
     if (!filename) return '';
     
     // Remover extensão
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    let nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    
+    // Remover números ao final (ex: "Astronaut Floating 1763922380549" -> "Astronaut Floating")
+    // Remove espaços/hífens/underscores seguidos de números no final
+    nameWithoutExt = nameWithoutExt.replace(/[\s_-]+\d+$/, '');
     
     // Substituir underscores por hífens e converter para minúsculas
     return nameWithoutExt

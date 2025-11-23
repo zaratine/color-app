@@ -56,10 +56,19 @@
                     .join(' ');
             }
             
+            function removeTrailingNumbers(str) {
+                if (!str) return '';
+                // Remove espaços/hífens/underscores seguidos de números no final
+                return str.replace(/[\s_-]+\d+$/, '');
+            }
+            
             function slugToFriendlyName(slug) {
                 if (!slug) return '';
                 // Converter slug (ex: "dog-skating") para nome amigável (ex: "Dog Skating")
-                return capitalizeWords(slug.replace(/-/g, ' '));
+                let friendlyName = slug.replace(/-/g, ' ');
+                // Remover números ao final
+                friendlyName = removeTrailingNumbers(friendlyName);
+                return capitalizeWords(friendlyName);
             }
             
             function updatePageElements() {
@@ -84,11 +93,6 @@
                     if (breadcrumbDrawing) {
                         breadcrumbDrawing.textContent = '';
                         const span = document.createElement('span');
-                        span.style.display = 'block';
-                        span.style.overflow = 'hidden';
-                        span.style.textOverflow = 'ellipsis';
-                        span.style.whiteSpace = 'nowrap';
-                        span.style.maxWidth = '100%';
                         span.textContent = drawingFriendlyName;
                         breadcrumbDrawing.appendChild(span);
                     }

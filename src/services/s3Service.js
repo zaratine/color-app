@@ -355,6 +355,7 @@ module.exports = {
     getThumbnailKey,
     getThumbnailFilename,
     extractKeyFromUrl,
-    getObjectFromS3
+    getObjectFromS3,
+    _uploadObjectToS3
 };
 
