@@ -8,7 +8,13 @@ const router = express.Router();
 // Função auxiliar para verificar se é um arquivo estático
 function isStaticFile(pathname) {
     const staticExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.json', '.woff', '.woff2', '.ttf', '.eot'];
-    return staticExtensions.some(ext => pathname.endsWith(ext));
+    const isStatic = staticExtensions.some(ext => pathname.endsWith(ext));
+    
+    // Permitir apenas arquivos HTML de verificação (ex: Google Search Console)
+    // Outros HTMLs devem ser processados pelas rotas do Express
+    const isVerificationFile = pathname.endsWith('.html') && pathname.startsWith('/google');
+    
+    return isStatic || isVerificationFile;
 }
 
 // Rota raiz

@@ -105,7 +105,11 @@ app.use((req, res, next) => {
     const staticExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.json'];
     const isStaticFile = staticExtensions.some(ext => req.path.endsWith(ext));
     
-    if (isStaticFile) {
+    // Permitir apenas arquivos HTML de verificação (ex: Google Search Console)
+    // Outros HTMLs devem ser processados pelas rotas do Express
+    const isVerificationFile = req.path.endsWith('.html') && req.path.startsWith('/google');
+    
+    if (isStaticFile || isVerificationFile) {
         const filePath = path.join(PUBLIC_DIR, req.path);
         
         // Verificar se o arquivo existe
@@ -133,6 +137,8 @@ app.use((req, res, next) => {
                 contentType = 'image/gif';
             } else if (req.path.endsWith('.ico')) {
                 contentType = 'image/x-icon';
+            } else if (isVerificationFile) {
+                contentType = 'text/html; charset=utf-8';
             }
             
             // Headers para evitar cache e garantir tipo correto

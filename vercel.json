@@ -20,6 +20,10 @@
       "dest": "/public/$1"
     },
     {
+      "src": "/(google.*\\.html)",
+      "dest": "/public/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "src/server.js"
     }
