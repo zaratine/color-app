@@ -36,5 +36,21 @@ router.get('/category', (req, res, next) => {
     res.sendFile(path.resolve(PUBLIC_DIR, 'category.html'));
 });
 
+// Nova rota amigável: /en/paint/:category/:drawing (deve vir antes de /en/:category para evitar conflitos)
+router.get('/en/paint/:category/:drawing', (req, res, next) => {
+    if (isStaticFile(req.path)) {
+        return next();
+    }
+    res.sendFile(path.resolve(PUBLIC_DIR, 'paint.html'));
+});
+
+// Nova rota amigável: /en/:category (categoria direta, sem "category" no path)
+router.get('/en/:category', (req, res, next) => {
+    if (isStaticFile(req.path)) {
+        return next();
+    }
+    res.sendFile(path.resolve(PUBLIC_DIR, 'category.html'));
+});
+
 module.exports = router;
 

@@ -1,6 +1,6 @@
 // UI - Renderização de categorias
 
-import { getAllCategories, getThumbnailUrl } from '../services/drawingsService.js';
+import { getAllCategories, getThumbnailUrl, getDrawingUrl } from '../services/drawingsService.js';
 import { getCategoryUrl } from '../utils/urlUtils.js';
 
 /**
@@ -37,18 +37,28 @@ export async function loadCategories() {
         for (const category of categoriesWithDrawings) {
             const firstDrawing = category.drawings[0];
             
-            // Obter URL do thumbnail
+            // Obter URL do thumbnail e URL original da imagem
             const thumbnailPath = getThumbnailUrl(firstDrawing, category.name);
-
+            const imageUrl = getDrawingUrl(firstDrawing);
+            
+            // Se for URL do S3 direta, tentar carregar direto. Se der 404, fazer fallback para /api/thumbnail
+            const isS3Thumbnail = thumbnailPath && thumbnailPath.includes('.s3.') && thumbnailPath.includes('.amazonaws.com');
+            const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : null;
+            
             const categoryCard = document.createElement('div');
             categoryCard.className = 'category-card';
             categoryCard.onclick = () => {
                 window.location.href = getCategoryUrl(category.name);
             };
 
+            // Se for URL do S3, fazer fallback para API quando der erro. Caso contrário, esconder imagem
+            const onErrorHandler = isS3Thumbnail && fallbackUrl
+                ? `this.onerror=null; this.src='${fallbackUrl}';`
+                : `this.style.display='none';`;
+
             categoryCard.innerHTML = `
                 <img src="${thumbnailPath}" alt="${category.displayName}" class="category-thumbnail" 
-                     onerror="this.style.display='none'">
+                     onerror="${onErrorHandler}">
                 <p class="category-name">${category.displayName}</p>
             `;
 

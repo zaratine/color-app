@@ -288,25 +288,10 @@ async function getDrawingsFromS3() {
                 // Adicionar arquivo à categoria com URL completa do S3
                 const publicUrl = getS3PublicUrl(key);
                 
-                // Verificar se o thumbnail existe antes de criar a URL
+                // Gerar URL do thumbnail direto do S3 (sem verificar se existe)
+                // O frontend fará fallback para /api/thumbnail se der 404
                 const thumbnailKey = getThumbnailKey(key);
-                let thumbnailUrl = null;
-                
-                // Buscar metadata do thumbnail (existe e data de modificação)
-                const thumbnailMetadata = await getThumbnailMetadata(thumbnailKey);
-                if (thumbnailMetadata.exists) {
-                    // Thumbnail existe, usar URL direta do S3 com versionamento baseado no timestamp
-                    const baseUrl = getS3PublicUrl(thumbnailKey);
-                    // Adicionar parâmetro de versão baseado no timestamp de modificação
-                    // Isso força o navegador a buscar nova versão quando o thumbnail é regenerado
-                    const versionParam = thumbnailMetadata.lastModified ? `?v=${thumbnailMetadata.lastModified}` : '';
-                    thumbnailUrl = `${baseUrl}${versionParam}`;
-                    console.log(`   ✅ Thumbnail encontrado: ${thumbnailKey} (versão: ${thumbnailMetadata.lastModified})`);
-                } else {
-                    // Thumbnail não existe, usar endpoint que gera sob demanda
-                    thumbnailUrl = `/api/thumbnail?url=${encodeURIComponent(publicUrl)}`;
-                    console.log(`   ⚠️  Thumbnail não encontrado, usando endpoint sob demanda: ${thumbnailKey}`);
-                }
+                const thumbnailUrl = getS3PublicUrl(thumbnailKey);
                 
                 database[category].drawings.push({
                     filename: filename,

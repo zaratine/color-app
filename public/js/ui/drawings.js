@@ -55,9 +55,10 @@ export async function loadDrawings() {
             // Obter URL do thumbnail
             let thumbnailPath = getThumbnailUrl(drawing, category);
             
-            // Se for URL do S3 direta (não /api/thumbnail), usar diretamente (S3 já tem CORS configurado)
-            // Se for /api/thumbnail, já está correto (endpoint que gera sob demanda)
-            // Não forçar proxy para URLs diretas do S3 - elas devem funcionar diretamente
+            // Se for URL do S3 direta, tentar carregar direto. Se der 404, fazer fallback para /api/thumbnail
+            // Se já for /api/thumbnail, usar diretamente
+            const isS3Thumbnail = thumbnailPath && thumbnailPath.includes('.s3.') && thumbnailPath.includes('.amazonaws.com');
+            const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3E?%3C/text%3E%3C/svg%3E';
             
             const drawingName = filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ');
 
@@ -67,9 +68,14 @@ export async function loadDrawings() {
                 window.location.href = getPaintUrl(category, filename, imageUrl);
             };
 
+            // Se for URL do S3, fazer fallback para API quando der erro
+            const onErrorHandler = isS3Thumbnail 
+                ? `this.onerror=null; this.src='${fallbackUrl}';`
+                : `this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3E?%3C/text%3E%3C/svg%3E';`;
+
             drawingCard.innerHTML = `
                 <img src="${thumbnailPath}" alt="${drawingName}" class="drawing-thumbnail"
-                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3E?%3C/text%3E%3C/svg%3E'">
+                     onerror="${onErrorHandler}">
                 <p class="drawing-name">${drawingName}</p>
             `;
 

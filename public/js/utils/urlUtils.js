@@ -1,7 +1,25 @@
 // Utils - Funções utilitárias para manipulação de URL
 
 /**
- * Obtém parâmetros da URL atual
+ * Converte um nome de arquivo para slug
+ * @param {string} filename - Nome do arquivo (ex: "Pirate_Ship.png")
+ * @returns {string} Slug (ex: "pirate-ship")
+ */
+export function filenameToSlug(filename) {
+    if (!filename) return '';
+    
+    // Remover extensão
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    
+    // Substituir underscores por hífens e converter para minúsculas
+    return nameWithoutExt
+        .replace(/_/g, '-')
+        .toLowerCase()
+        .trim();
+}
+
+/**
+ * Obtém parâmetros da URL atual (compatibilidade com formato antigo)
  * @returns {Object} Objeto com os parâmetros da URL
  */
 export function getUrlParams() {
@@ -14,44 +32,72 @@ export function getUrlParams() {
 
 /**
  * Obtém o nome da categoria da URL
+ * Suporta tanto o formato antigo (?cat=...) quanto o novo (/en/:category ou /en/paint/:category/:drawing)
  * @returns {string|null} Nome da categoria ou null se não existir
  */
 export function getCategoryFromUrl() {
+    const path = window.location.pathname;
+    
+    // Tentar novo formato: /en/paint/:category/:drawing
+    const paintMatch = path.match(/^\/en\/paint\/([^\/]+)/);
+    if (paintMatch) {
+        return decodeURIComponent(paintMatch[1]);
+    }
+    
+    // Tentar novo formato: /en/:category (mas não /en/paint)
+    const categoryMatch = path.match(/^\/en\/([^\/]+)$/);
+    if (categoryMatch) {
+        return decodeURIComponent(categoryMatch[1]);
+    }
+    
+    // Fallback para formato antigo: ?cat=...
     const params = new URLSearchParams(window.location.search);
     return params.get('cat');
 }
 
 /**
- * Obtém o nome do desenho da URL
- * @returns {string|null} Nome do desenho ou null se não existir
+ * Obtém o slug do desenho da URL
+ * Suporta tanto o formato antigo (?drawing=...) quanto o novo (/en/paint/:category/:drawing)
+ * @returns {string|null} Slug do desenho ou null se não existir
  */
 export function getDrawingFromUrl() {
+    const path = window.location.pathname;
+    
+    // Tentar novo formato: /en/paint/:category/:drawing
+    const newFormatMatch = path.match(/^\/en\/paint\/[^\/]+\/([^\/]+)/);
+    if (newFormatMatch) {
+        return decodeURIComponent(newFormatMatch[1]);
+    }
+    
+    // Fallback para formato antigo: ?drawing=...
     const params = new URLSearchParams(window.location.search);
     return params.get('drawing');
 }
 
 /**
- * Cria uma URL para uma categoria
+ * Cria uma URL para uma categoria (novo formato amigável)
  * @param {string} categoryName - Nome da categoria
  * @returns {string} URL formatada
  */
 export function getCategoryUrl(categoryName) {
-    return `/category?cat=${encodeURIComponent(categoryName)}`;
+    if (!categoryName) return '/';
+    return `/en/${encodeURIComponent(categoryName.toLowerCase().trim())}`;
 }
 
 /**
- * Cria uma URL para um desenho na página de pintura
+ * Cria uma URL para um desenho na página de pintura (novo formato amigável)
  * @param {string} categoryName - Nome da categoria
- * @param {string} drawingName - Nome do desenho
- * @param {string|null} imageUrl - URL completa da imagem (opcional, para S3)
+ * @param {string} drawingName - Nome do desenho (será convertido para slug)
+ * @param {string|null} imageUrl - URL completa da imagem (opcional, não usado no novo formato)
  * @returns {string} URL formatada
  */
 export function getPaintUrl(categoryName, drawingName, imageUrl = null) {
-    let url = `/paint?cat=${encodeURIComponent(categoryName)}&drawing=${encodeURIComponent(drawingName)}`;
-    if (imageUrl) {
-        url += `&url=${encodeURIComponent(imageUrl)}`;
-    }
-    return url;
+    if (!categoryName || !drawingName) return '/';
+    
+    const slug = filenameToSlug(drawingName);
+    const normalizedCategory = categoryName.toLowerCase().trim();
+    
+    return `/en/paint/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(slug)}`;
 }
 
 /**
@@ -81,5 +127,55 @@ export function isS3Url(url) {
 export function getProxyUrl(s3Url) {
     if (!isS3Url(s3Url)) return s3Url;
     return `/api/proxy-image?url=${encodeURIComponent(s3Url)}`;
+}
+
+/**
+ * Busca um desenho no banco de dados usando slug e categoria
+ * @param {string} slug - Slug do desenho (ex: "pirate-ship")
+ * @param {string} category - Categoria (ex: "twins")
+ * @returns {Promise<Object|null>} Objeto com informações do desenho ou null se não encontrado
+ */
+export async function getDrawingBySlug(slug, category) {
+    if (!slug || !category) {
+        return null;
+    }
+    
+    try {
+        // Importar dinamicamente para evitar dependência circular
+        const { getDrawingsDatabase, getDrawingsInCategory } = await import('../services/drawingsService.js');
+        
+        // Obter desenhos da categoria
+        const drawings = await getDrawingsInCategory(category);
+        
+        if (!drawings || drawings.length === 0) {
+            return null;
+        }
+        
+        // Buscar desenho que corresponde ao slug
+        const normalizedSlug = slug.toLowerCase().trim();
+        
+        for (const drawing of drawings) {
+            // Obter nome do arquivo
+            let filename;
+            if (typeof drawing === 'string') {
+                filename = drawing;
+            } else if (typeof drawing === 'object') {
+                filename = drawing.filename || drawing;
+            } else {
+                continue;
+            }
+            
+            // Converter para slug e comparar
+            const drawingSlug = filenameToSlug(filename);
+            if (drawingSlug === normalizedSlug) {
+                return drawing;
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Erro ao buscar desenho por slug:', error);
+        return null;
+    }
 }
 

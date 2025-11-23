@@ -1,6 +1,7 @@
 // UI - Lógica de pintura/preenchimento para imagens PNG usando Canvas
 
-import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl, getProxyUrl, isS3Url } from '../utils/urlUtils.js';
+import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl, getProxyUrl, isS3Url, getDrawingBySlug } from '../utils/urlUtils.js';
+import { getDrawingUrl } from '../services/drawingsService.js';
 
 // Paleta de 24 cores para crianças
 const COLOR_PALETTE = [
@@ -307,11 +308,11 @@ function resizeCanvas() {
 }
 
 // Função para carregar e renderizar a imagem PNG
-function loadImage() {
+async function loadImage() {
     const category = getCategoryFromUrl();
-    const drawing = getDrawingFromUrl();
+    const drawingSlug = getDrawingFromUrl(); // Agora é um slug, não o nome do arquivo
 
-    if (!category || !drawing) {
+    if (!category || !drawingSlug) {
         const container = document.getElementById('canvas-container');
         if (container) {
             // Preservar o botão de download antes de limpar o container
@@ -340,9 +341,44 @@ function loadImage() {
         return;
     }
 
-    // Verificar se há URL completa (S3) ou usar caminho local
-    const imageUrlFromParams = getImageUrlFromUrl();
-    let imagePath = imageUrlFromParams || `drawings/${category}/${drawing}`;
+    // Buscar desenho no banco de dados usando slug e categoria
+    let drawing = null;
+    let imagePath = null;
+    
+    try {
+        // Tentar buscar pelo slug (novo formato)
+        drawing = await getDrawingBySlug(drawingSlug, category);
+        
+        if (drawing) {
+            // Obter URL do desenho encontrado
+            const imageUrl = getDrawingUrl(drawing);
+            if (imageUrl) {
+                imagePath = imageUrl;
+            } else {
+                // Fallback: construir caminho local
+                const filename = typeof drawing === 'string' ? drawing : (drawing.filename || drawing);
+                imagePath = `drawings/${category}/${filename}`;
+            }
+        } else {
+            // Se não encontrou pelo slug, tentar formato antigo (compatibilidade)
+            const imageUrlFromParams = getImageUrlFromUrl();
+            if (imageUrlFromParams) {
+                imagePath = imageUrlFromParams;
+            } else {
+                // Último fallback: usar slug como nome de arquivo (pode não funcionar)
+                imagePath = `drawings/${category}/${drawingSlug}`;
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao buscar desenho:', error);
+        // Fallback para formato antigo
+        const imageUrlFromParams = getImageUrlFromUrl();
+        if (imageUrlFromParams) {
+            imagePath = imageUrlFromParams;
+        } else {
+            imagePath = `drawings/${category}/${drawingSlug}`;
+        }
+    }
     
     // Se for URL do S3, usar proxy para evitar problemas de CORS
     if (isS3Url(imagePath)) {
@@ -358,7 +394,9 @@ function loadImage() {
     // Carregar imagem
     image = new Image();
     // Usar crossOrigin apenas se não for o proxy (que já tem CORS configurado)
-    if (!isS3Url(imageUrlFromParams)) {
+    // Verificar se imagePath é uma URL do S3 (antes de passar pelo proxy)
+    const originalImageUrl = drawing && getDrawingUrl(drawing);
+    if (!originalImageUrl || !isS3Url(originalImageUrl)) {
         image.crossOrigin = 'anonymous';
     }
     
@@ -540,9 +578,20 @@ function downloadImage() {
         
         // Obter nome do arquivo da URL
         const category = getCategoryFromUrl();
-        const drawing = getDrawingFromUrl();
-        const fileName = drawing ? drawing.replace(/\.[^/.]+$/, '') : 'desenho';
-        const extension = drawing ? drawing.split('.').pop() : 'png';
+        const drawingSlug = getDrawingFromUrl();
+        
+        // Tentar obter nome do arquivo do desenho encontrado
+        let fileName = 'desenho';
+        let extension = 'png';
+        
+        if (drawing) {
+            const filename = typeof drawing === 'string' ? drawing : (drawing.filename || drawing);
+            fileName = filename.replace(/\.[^/.]+$/, '');
+            extension = filename.split('.').pop() || 'png';
+        } else if (drawingSlug) {
+            // Fallback: usar slug como nome
+            fileName = drawingSlug;
+        }
         
         // Criar link de download
         const downloadLink = document.createElement('a');
