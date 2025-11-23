@@ -13,7 +13,7 @@ export async function loadCategories() {
     grid.innerHTML = `
         <div class="loading-container">
             <div class="spinner"></div>
-            <p class="loading-label">Carregando categorias...</p>
+            <p class="loading-label">Loading categories...</p>
         </div>
     `;
 
@@ -28,7 +28,7 @@ export async function loadCategories() {
         
         if (categoriesWithDrawings.length === 0) {
             console.warn('📋 Nenhuma categoria com desenhos encontrada');
-            grid.innerHTML = '<p>Nenhuma categoria encontrada. Verifique se o servidor está rodando.</p>';
+            grid.innerHTML = '<p>No categories found. Please check if the server is running.</p>';
             return;
         }
 
@@ -59,14 +59,14 @@ export async function loadCategories() {
             categoryCard.innerHTML = `
                 <img src="${thumbnailPath}" alt="${category.displayName}" class="category-thumbnail" 
                      onerror="${onErrorHandler}">
-                <p class="category-name">${category.displayName}</p>
+                <h2 class="category-name">${category.displayName}</h2>
             `;
 
             grid.appendChild(categoryCard);
         }
     } catch (error) {
         console.error('Erro ao carregar categorias:', error);
-        grid.innerHTML = '<p>Erro ao carregar categorias. Verifique se o servidor está rodando.</p>';
+        grid.innerHTML = '<p>Error loading categories. Please check if the server is running.</p>';
     }
 }
 

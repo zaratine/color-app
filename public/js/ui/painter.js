@@ -1,7 +1,56 @@
 // UI - Lógica de pintura/preenchimento para imagens PNG usando Canvas
 
 import { getCategoryFromUrl, getDrawingFromUrl, getCategoryUrl, getImageUrlFromUrl, getProxyUrl, isS3Url, getDrawingBySlug } from '../utils/urlUtils.js';
-import { getDrawingUrl } from '../services/drawingsService.js';
+import { getDrawingUrl, getDrawingFilename } from '../services/drawingsService.js';
+
+/**
+ * Capitaliza a primeira letra de cada palavra em uma string
+ * @param {string} str - String a ser capitalizada
+ * @returns {string} String com primeira letra de cada palavra em maiúscula
+ */
+function capitalizeWords(str) {
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
+/**
+ * Obtém o nome amigável de um desenho a partir do nome do arquivo
+ * @param {string|Object} drawing - Nome do arquivo ou objeto do desenho
+ * @returns {string} Nome amigável do desenho
+ */
+function getFriendlyDrawingName(drawing) {
+    const filename = getDrawingFilename(drawing);
+    return capitalizeWords(
+        filename.replace(/\.(svg|png|jpg|jpeg)$/i, '').replace(/_/g, ' ')
+    );
+}
+
+/**
+ * Atualiza o título da página, h1 e meta description com o nome amigável do desenho
+ * @param {string|Object} drawing - Nome do arquivo ou objeto do desenho
+ */
+function updatePageMetadata(drawing) {
+    const friendlyName = getFriendlyDrawingName(drawing);
+    
+    // Atualizar título da página
+    document.title = `${friendlyName} Coloring Page – Print or Color Online`;
+    
+    // Atualizar h1
+    const h1 = document.getElementById('drawing-title');
+    if (h1) {
+        h1.textContent = `${friendlyName} Coloring Page`;
+        h1.style.display = 'block';
+    }
+    
+    // Atualizar meta description
+    const metaDescription = document.getElementById('meta-description');
+    if (metaDescription) {
+        metaDescription.content = `Color online or download a free ${friendlyName} coloring page for kids. High-resolution drawing ready to print or color online. Fun and easy activity for children between 2 and 6 years old.`;
+    }
+}
 
 // Paleta de 24 cores para crianças
 const COLOR_PALETTE = [
@@ -39,6 +88,7 @@ let imageData = null;
 let originalImageData = null; // Armazena a ImageData original para preservar outlines
 let container = null;
 let resizeTimeout = null;
+let drawing = null; // Armazena o desenho atual para uso em outras funções
 
 // Função para calcular e ajustar o tamanho dos itens de cor
 function adjustColorItemsSize() {
@@ -315,34 +365,18 @@ async function loadImage() {
     if (!category || !drawingSlug) {
         const container = document.getElementById('canvas-container');
         if (container) {
-            // Preservar o botão de download antes de limpar o container
-            const downloadLink = container.querySelector('#download-link');
-            const downloadLinkClone = downloadLink ? downloadLink.cloneNode(true) : null;
-            
-            // Remover todos os elementos exceto o botão de download
-            while (container.firstChild) {
-                container.removeChild(container.firstChild);
-            }
-            
-            // Recolocar o botão de download se existir
-            if (downloadLinkClone) {
-                container.appendChild(downloadLinkClone);
-                // Reatachar o event listener
-                downloadLinkClone.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    downloadImage();
-                });
-            }
+            // Limpar todos os elementos do container
+            container.innerHTML = '';
             
             const errorMsg = document.createElement('p');
-            errorMsg.textContent = 'Erro: Categoria ou desenho não especificado.';
+            errorMsg.textContent = 'Error: Category or drawing not specified.';
             container.appendChild(errorMsg);
         }
         return;
     }
 
     // Buscar desenho no banco de dados usando slug e categoria
-    let drawing = null;
+    drawing = null;
     let imagePath = null;
     
     try {
@@ -350,6 +384,9 @@ async function loadImage() {
         drawing = await getDrawingBySlug(drawingSlug, category);
         
         if (drawing) {
+            // Atualizar metadados da página com o nome amigável
+            updatePageMetadata(drawing);
+            
             // Obter URL do desenho encontrado
             const imageUrl = getDrawingUrl(drawing);
             if (imageUrl) {
@@ -364,9 +401,18 @@ async function loadImage() {
             const imageUrlFromParams = getImageUrlFromUrl();
             if (imageUrlFromParams) {
                 imagePath = imageUrlFromParams;
+                // Tentar criar um desenho temporário para obter o nome amigável do slug
+                if (drawingSlug) {
+                    const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
+                    updatePageMetadata(tempDrawing);
+                }
             } else {
                 // Último fallback: usar slug como nome de arquivo (pode não funcionar)
                 imagePath = `drawings/${category}/${drawingSlug}`;
+                if (drawingSlug) {
+                    const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
+                    updatePageMetadata(tempDrawing);
+                }
             }
         }
     } catch (error) {
@@ -375,8 +421,16 @@ async function loadImage() {
         const imageUrlFromParams = getImageUrlFromUrl();
         if (imageUrlFromParams) {
             imagePath = imageUrlFromParams;
+            if (drawingSlug) {
+                const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
+                updatePageMetadata(tempDrawing);
+            }
         } else {
             imagePath = `drawings/${category}/${drawingSlug}`;
+            if (drawingSlug) {
+                const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
+                updatePageMetadata(tempDrawing);
+            }
         }
     }
     
@@ -416,24 +470,8 @@ async function loadImage() {
         // Armazenar ImageData original para preservar outlines pretos
         originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Preservar o botão de download antes de limpar o container
-        const downloadLink = container.querySelector('#download-link');
-        const downloadLinkClone = downloadLink ? downloadLink.cloneNode(true) : null;
-        
-        // Remover todos os elementos do container
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
-        
-        // Recolocar o botão de download se existir
-        if (downloadLinkClone) {
-            container.appendChild(downloadLinkClone);
-            // Reatachar o event listener
-            downloadLinkClone.addEventListener('click', (e) => {
-                e.preventDefault();
-                downloadImage();
-            });
-        }
+        // Limpar todos os elementos do container
+        container.innerHTML = '';
         
         container.appendChild(canvas);
         
@@ -504,27 +542,11 @@ async function loadImage() {
     };
     
     image.onerror = function() {
-        // Preservar o botão de download antes de limpar o container
-        const downloadLink = container.querySelector('#download-link');
-        const downloadLinkClone = downloadLink ? downloadLink.cloneNode(true) : null;
-        
-        // Remover todos os elementos exceto o botão de download
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
-        
-        // Recolocar o botão de download se existir
-        if (downloadLinkClone) {
-            container.appendChild(downloadLinkClone);
-            // Reatachar o event listener
-            downloadLinkClone.addEventListener('click', (e) => {
-                e.preventDefault();
-                downloadImage();
-            });
-        }
+        // Limpar todos os elementos do container
+        container.innerHTML = '';
         
         const errorMsg = document.createElement('p');
-        errorMsg.textContent = 'Erro ao carregar a imagem. Verifique se o arquivo existe.';
+        errorMsg.textContent = 'Error loading image. Please check if the file exists.';
         container.appendChild(errorMsg);
     };
     
@@ -567,11 +589,19 @@ function updateBackLink() {
 
 // Função para fazer download da imagem
 function downloadImage() {
-    if (!canvas) return;
+    if (!canvas) {
+        console.error('Canvas não disponível para download');
+        return;
+    }
+    
+    console.log('Iniciando download da imagem');
     
     // Converter canvas para blob
     canvas.toBlob((blob) => {
-        if (!blob) return;
+        if (!blob) {
+            console.error('Erro ao converter canvas para blob');
+            return;
+        }
         
         // Criar URL temporária
         const url = URL.createObjectURL(blob);
@@ -581,7 +611,7 @@ function downloadImage() {
         const drawingSlug = getDrawingFromUrl();
         
         // Tentar obter nome do arquivo do desenho encontrado
-        let fileName = 'desenho';
+        let fileName = 'drawing';
         let extension = 'png';
         
         if (drawing) {
@@ -590,13 +620,15 @@ function downloadImage() {
             extension = filename.split('.').pop() || 'png';
         } else if (drawingSlug) {
             // Fallback: usar slug como nome
-            fileName = drawingSlug;
+            fileName = drawingSlug.replace(/-/g, '_');
         }
+        
+        console.log('Nome do arquivo:', `${fileName}_colored.${extension}`);
         
         // Criar link de download
         const downloadLink = document.createElement('a');
         downloadLink.href = url;
-        downloadLink.download = `${fileName}_colorido.${extension}`;
+        downloadLink.download = `${fileName}_colored.${extension}`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -610,10 +642,25 @@ function downloadImage() {
 function initDownloadButton() {
     const downloadLink = document.getElementById('download-link');
     if (downloadLink) {
+        // Remover event listeners anteriores se houver (usando onclick = null)
+        downloadLink.onclick = null;
+        
         downloadLink.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('Download button clicked');
             downloadImage();
         });
+        
+        // Também adicionar como fallback usando onclick
+        downloadLink.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Download button clicked (onclick)');
+            downloadImage();
+        };
+    } else {
+        console.error('Download link not found');
     }
 }
 

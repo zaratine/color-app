@@ -9,10 +9,8 @@ const { formatDisplayName } = require('../utils/stringUtils');
  * @returns {string} Nome do arquivo thumbnail (ex: "thumb_desenho.png")
  */
 function getThumbnailFilename(originalFilename) {
-    // Extrair nome e extensão
     const lastDotIndex = originalFilename.lastIndexOf('.');
     if (lastDotIndex === -1) {
-        // Sem extensão, apenas adicionar prefixo
         return `thumb_${originalFilename}`;
     }
     
@@ -27,10 +25,8 @@ function getThumbnailFilename(originalFilename) {
  * @returns {string} Chave S3 do thumbnail (ex: "drawings/customizados/thumb_desenho.png")
  */
 function getThumbnailKey(originalKey) {
-    // Extrair diretório e nome do arquivo
     const lastSlashIndex = originalKey.lastIndexOf('/');
     if (lastSlashIndex === -1) {
-        // Sem diretório, apenas adicionar prefixo
         return getThumbnailFilename(originalKey);
     }
     
@@ -41,32 +37,40 @@ function getThumbnailKey(originalKey) {
     return `${directory}${thumbnailFilename}`;
 }
 
-// Configurar cliente S3
-// Prioridade: variável de ambiente > config.js
-const accessKeyId = process.env.AWS_ACCESS_KEY_ID || config.AWS_ACCESS_KEY_ID;
-const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || config.AWS_SECRET_ACCESS_KEY;
-const region = process.env.AWS_REGION || config.AWS_REGION || 'us-east-1';
-const bucketName = process.env.AWS_S3_BUCKET_NAME || config.AWS_S3_BUCKET_NAME;
+/**
+ * Valida e retorna a configuração do S3
+ * @returns {Object} {isConfigured, accessKeyId, secretAccessKey, region, bucketName}
+ */
+function _validateS3Config() {
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID || config.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || config.AWS_SECRET_ACCESS_KEY;
+    const region = process.env.AWS_REGION || config.AWS_REGION || 'us-east-1';
+    const bucketName = process.env.AWS_S3_BUCKET_NAME || config.AWS_S3_BUCKET_NAME;
 
-// Verificar se as credenciais estão configuradas
-const isS3Configured = accessKeyId && 
-                       secretAccessKey && 
-                       accessKeyId !== 'sua-access-key-aqui' && 
-                       secretAccessKey !== 'sua-secret-key-aqui' &&
-                       bucketName &&
-                       bucketName !== 'nome-do-seu-bucket';
+    const isConfigured = accessKeyId && 
+                         secretAccessKey && 
+                         accessKeyId !== 'sua-access-key-aqui' && 
+                         secretAccessKey !== 'sua-secret-key-aqui' &&
+                         bucketName &&
+                         bucketName !== 'nome-do-seu-bucket';
 
-// Log de debug para identificar problemas de configuração
-if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    console.log('🔍 Verificando configuração S3 no ambiente Vercel/Produção:');
-    console.log('   - AWS_ACCESS_KEY_ID:', accessKeyId ? `${accessKeyId.substring(0, 8)}...` : 'NÃO DEFINIDO');
-    console.log('   - AWS_SECRET_ACCESS_KEY:', secretAccessKey ? 'DEFINIDO' : 'NÃO DEFINIDO');
-    console.log('   - AWS_REGION:', region || 'NÃO DEFINIDO');
-    console.log('   - AWS_S3_BUCKET_NAME:', bucketName || 'NÃO DEFINIDO');
-    console.log('   - S3 Configurado?', isS3Configured ? 'SIM ✅' : 'NÃO ❌');
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+        if (isConfigured) {
+            console.log('✅ S3 configurado. Bucket:', bucketName, 'Região:', region);
+        } else {
+            console.error('❌ S3 não configurado no ambiente Vercel/Produção!');
+            console.error('❌ Configure as variáveis de ambiente no painel do Vercel.');
+        }
+    } else if (!isConfigured) {
+        console.log('ℹ️  S3 não configurado. Usando salvamento local.');
+    }
+
+    return { isConfigured, accessKeyId, secretAccessKey, region, bucketName };
 }
 
-// Criar cliente S3 apenas se as credenciais estiverem configuradas
+// Configurar cliente S3
+const { isConfigured: isS3Configured, accessKeyId, secretAccessKey, region, bucketName } = _validateS3Config();
+
 let s3Client = null;
 if (isS3Configured) {
     s3Client = new S3Client({
@@ -76,14 +80,31 @@ if (isS3Configured) {
             secretAccessKey: secretAccessKey
         }
     });
-    console.log('✅ Cliente S3 configurado. Bucket:', bucketName, 'Região:', region);
-} else {
-    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-        console.error('❌ S3 não configurado no ambiente Vercel/Produção!');
-        console.error('❌ Configure as variáveis de ambiente no painel do Vercel.');
-    } else {
-        console.log('ℹ️  S3 não configurado. Usando salvamento local.');
+}
+
+/**
+ * Função genérica para fazer upload de objetos para o S3
+ * @param {Buffer} buffer - Buffer do objeto
+ * @param {string} key - Chave S3 completa
+ * @param {string} contentType - Tipo MIME
+ * @param {string} acl - ACL do objeto (padrão: 'public-read')
+ * @returns {Promise<string>} URL pública do objeto no S3
+ */
+async function _uploadObjectToS3(buffer, key, contentType = 'image/png', acl = 'public-read') {
+    if (!isS3Configured || !s3Client) {
+        throw new Error('S3 não está configurado. Configure as variáveis de ambiente AWS.');
     }
+
+    const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        ACL: acl
+    });
+
+    await s3Client.send(command);
+    return getS3PublicUrl(key);
 }
 
 /**
@@ -94,44 +115,8 @@ if (isS3Configured) {
  * @returns {Promise<string>} URL pública da imagem no S3
  */
 async function uploadToS3(imageBuffer, filename, contentType = 'image/png') {
-    if (!isS3Configured || !s3Client) {
-        throw new Error('S3 não está configurado. Configure as variáveis de ambiente AWS.');
-    }
-
-    try {
-        console.log('    [uploadToS3] Iniciando upload para S3...');
-        console.log('    [uploadToS3] Bucket:', bucketName);
-        console.log('    [uploadToS3] Key:', filename);
-        console.log('    [uploadToS3] Tamanho:', imageBuffer.length, 'bytes');
-
-        // Definir o caminho no bucket (pasta customizados)
-        const key = `drawings/customizados/${filename}`;
-
-        // Comando para fazer upload
-        const command = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: key,
-            Body: imageBuffer,
-            ContentType: contentType,
-            // Tornar o objeto público para leitura
-            ACL: 'public-read'
-        });
-
-        // Executar upload
-        await s3Client.send(command);
-        console.log('    [uploadToS3] Upload concluído com sucesso');
-
-        // Construir URL pública
-        // Formato: https://bucket-name.s3.region.amazonaws.com/key
-        const publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
-        console.log('    [uploadToS3] URL pública:', publicUrl);
-
-        return publicUrl;
-    } catch (error) {
-        console.error('    [uploadToS3] Erro ao fazer upload:', error.message);
-        console.error('    [uploadToS3] Stack:', error.stack);
-        throw error;
-    }
+    const key = `drawings/customizados/${filename}`;
+    return await _uploadObjectToS3(imageBuffer, key, contentType);
 }
 
 /**
@@ -139,15 +124,7 @@ async function uploadToS3(imageBuffer, filename, contentType = 'image/png') {
  * @returns {boolean}
  */
 function isS3Available() {
-    const available = isS3Configured && s3Client !== null;
-    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-        if (!available) {
-            console.error('❌ isS3Available() retornou FALSE no ambiente Vercel/Produção');
-            console.error('   - isS3Configured:', isS3Configured);
-            console.error('   - s3Client:', s3Client !== null ? 'criado' : 'null');
-        }
-    }
-    return available;
+    return isS3Configured && s3Client !== null;
 }
 
 /**
@@ -204,104 +181,48 @@ async function getDrawingsFromS3() {
     }
 
     try {
-        console.log('📦 Listando desenhos do S3...');
-        console.log('📦 Bucket:', bucketName);
-        console.log('📦 Prefixo:', 'drawings/');
         const objects = await listObjects('drawings/');
-        console.log(`📦 Total de objetos encontrados: ${objects.length}`);
         
-        // Se não encontrou nada, listar todos os objetos do bucket para debug
         if (objects.length === 0) {
             console.log('⚠️  Nenhum objeto encontrado com prefixo "drawings/"');
-            console.log('🔍 Listando todos os objetos do bucket para debug...');
-            try {
-                const allObjects = await listObjects('');
-                console.log(`📦 Total de objetos no bucket: ${allObjects.length}`);
-                if (allObjects.length > 0) {
-                    console.log('📦 Todos os objetos no bucket:');
-                    allObjects.slice(0, 20).forEach((obj, index) => {
-                        console.log(`   ${index + 1}. ${obj.Key}`);
-                    });
-                    if (allObjects.length > 20) {
-                        console.log(`   ... e mais ${allObjects.length - 20} objeto(s)`);
-                    }
-                    console.log('💡 Dica: As imagens precisam ter chaves começando com "drawings/"');
-                    console.log('💡 Exemplo correto: drawings/animais/Cachorro.png');
-                } else {
-                    console.log('⚠️  O bucket está vazio!');
-                }
-            } catch (debugError) {
-                console.error('Erro ao listar todos os objetos:', debugError.message);
-            }
-        } else {
-            // Log de debug: mostrar todas as chaves encontradas
-            console.log('📦 Chaves encontradas:');
-            objects.forEach((obj, index) => {
-                console.log(`   ${index + 1}. ${obj.Key}`);
-            });
+            return {};
         }
 
         const database = {};
         const imageExtensions = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
-        // Processar cada objeto (usar for...of para suportar await)
         for (const obj of objects) {
             const key = obj.Key;
-            console.log(`📦 Processando chave: ${key}`);
             
             // Ignorar se não for um arquivo de imagem
-            const isImage = imageExtensions.some(ext => 
-                key.toLowerCase().endsWith(ext)
-            );
+            const isImage = imageExtensions.some(ext => key.toLowerCase().endsWith(ext));
+            if (!isImage) continue;
             
-            if (!isImage) {
-                console.log(`   ⏭️  Ignorado (não é imagem): ${key}`);
-                continue;
-            }
-            
-            // Ignorar thumbnails na listagem principal (só queremos as imagens originais)
-            if (key.includes('/thumb_') || key.endsWith('thumb_')) {
-                console.log(`   ⏭️  Ignorado (é thumbnail): ${key}`);
-                continue;
-            }
+            // Ignorar thumbnails na listagem principal
+            if (key.includes('/thumb_') || key.endsWith('thumb_')) continue;
 
             // Extrair categoria e nome do arquivo
             // Formato esperado: drawings/{categoria}/{arquivo}
             const parts = key.replace('drawings/', '').split('/');
-            console.log(`   📂 Partes após "drawings/":`, parts);
             
             if (parts.length >= 2) {
                 const category = parts[0];
-                const filename = parts.slice(1).join('/'); // Caso tenha subpastas
-                console.log(`   ✅ Categoria: "${category}", Arquivo: "${filename}"`);
+                const filename = parts.slice(1).join('/');
 
-                // Inicializar categoria se não existir
                 if (!database[category]) {
                     database[category] = {
                         displayName: formatDisplayName(category),
                         drawings: [],
-                        source: 's3' // Marcar que vem do S3
+                        source: 's3'
                     };
-                    console.log(`   🆕 Nova categoria criada: "${category}"`);
                 }
 
-                // Adicionar arquivo à categoria com URL completa do S3
-                const publicUrl = getS3PublicUrl(key);
-                
-                // Gerar URL do thumbnail direto do S3 (sem verificar se existe)
-                // O frontend fará fallback para /api/thumbnail se der 404
                 const thumbnailKey = getThumbnailKey(key);
-                const thumbnailUrl = getS3PublicUrl(thumbnailKey);
-                
                 database[category].drawings.push({
                     filename: filename,
-                    url: publicUrl,
-                    thumbnailUrl: thumbnailUrl
+                    url: getS3PublicUrl(key),
+                    thumbnailUrl: getS3PublicUrl(thumbnailKey)
                 });
-                console.log(`   ➕ Arquivo adicionado à categoria "${category}"`);
-            } else {
-                console.log(`   ⚠️  Chave ignorada (formato inválido): ${key}`);
-                console.log(`   💡 Formato esperado: drawings/{categoria}/{arquivo}`);
             }
         }
 
@@ -315,18 +236,6 @@ async function getDrawingsFromS3() {
         });
 
         console.log(`📦 Categorias encontradas: ${Object.keys(database).length}`);
-        if (Object.keys(database).length > 0) {
-            console.log('📦 Categorias:', Object.keys(database).join(', '));
-            Object.keys(database).forEach(cat => {
-                console.log(`   - ${cat}: ${database[cat].drawings.length} desenho(s)`);
-            });
-        } else {
-            console.log('⚠️  Nenhuma categoria foi criada!');
-            console.log('💡 Verifique se:');
-            console.log('   1. As imagens foram enviadas com chaves no formato: drawings/{categoria}/{arquivo}');
-            console.log('   2. As imagens têm extensões válidas: .svg, .png, .jpg, .jpeg, .gif, .webp');
-            console.log('   3. O bucket e as credenciais estão corretos');
-        }
         return database;
     } catch (error) {
         console.error('Erro ao obter desenhos do S3:', error.message);
@@ -340,19 +249,8 @@ async function getDrawingsFromS3() {
  * @returns {string} URL pública do objeto
  */
 function getS3PublicUrl(key) {
-    // Remover barra inicial se houver
     const cleanKey = key.startsWith('/') ? key.substring(1) : key;
     return `https://${bucketName}.s3.${region}.amazonaws.com/${cleanKey}`;
-}
-
-/**
- * Gera URL pública do thumbnail de uma imagem no S3
- * @param {string} originalKey - Chave S3 da imagem original (ex: "drawings/animais/Cachorro.png")
- * @returns {string} URL pública do thumbnail
- */
-function getThumbnailUrl(originalKey) {
-    const thumbnailKey = getThumbnailKey(originalKey);
-    return getS3PublicUrl(thumbnailKey);
 }
 
 /**
@@ -361,21 +259,14 @@ function getThumbnailUrl(originalKey) {
  * @returns {string|null} Chave do objeto ou null se a URL não for válida
  */
 function extractKeyFromUrl(url) {
+    if (!url) return null;
+    
     try {
-        if (!url) return null;
-        
-        // Formato esperado: https://bucket-name.s3.region.amazonaws.com/key
-        // Ou: https://bucket-name.s3-region.amazonaws.com/key (formato antigo)
-        // Usar regex mais flexível para capturar qualquer região
+        // Formato: https://bucket-name.s3.region.amazonaws.com/key ou https://bucket-name.s3-region.amazonaws.com/key
         const urlPattern = new RegExp(`https://${bucketName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.s3[.-][^.]+\.amazonaws\\.com/(.+)`);
         const match = url.match(urlPattern);
         
-        if (match && match[1]) {
-            // Decodificar a URL (pode ter caracteres codificados)
-            return decodeURIComponent(match[1]);
-        }
-        
-        return null;
+        return match && match[1] ? decodeURIComponent(match[1]) : null;
     } catch (error) {
         console.error('Erro ao extrair chave da URL:', error);
         return null;
@@ -400,7 +291,6 @@ async function getObjectFromS3(key) {
 
         const response = await s3Client.send(command);
         
-        // Converter stream para buffer
         const chunks = [];
         for await (const chunk of response.Body) {
             chunks.push(chunk);
@@ -433,58 +323,14 @@ async function objectExistsInS3(key) {
             Key: key
         });
 
-        try {
-            await s3Client.send(command);
-            return true; // Objeto existe
-        } catch (headError) {
-            // Se o erro for 404 (Not Found), o objeto não existe
-            if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
-                return false;
-            }
-            // Outros erros são propagados
-            throw headError;
+        await s3Client.send(command);
+        return true;
+    } catch (headError) {
+        if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
+            return false;
         }
-    } catch (error) {
-        console.error('    [objectExistsInS3] Erro ao verificar objeto no S3:', error.message);
+        console.error('Erro ao verificar objeto no S3:', headError.message);
         return false;
-    }
-}
-
-/**
- * Busca metadata de um thumbnail no S3 (existe e data de modificação)
- * @param {string} thumbnailKey - Chave S3 do thumbnail
- * @returns {Promise<{exists: boolean, lastModified: number|null}>} Metadata do thumbnail
- */
-async function getThumbnailMetadata(thumbnailKey) {
-    if (!isS3Configured || !s3Client) {
-        return { exists: false, lastModified: null };
-    }
-
-    try {
-        const command = new HeadObjectCommand({
-            Bucket: bucketName,
-            Key: thumbnailKey
-        });
-
-        try {
-            const response = await s3Client.send(command);
-            // Converter LastModified para timestamp (milissegundos)
-            const lastModified = response.LastModified ? response.LastModified.getTime() : null;
-            return {
-                exists: true,
-                lastModified: lastModified
-            };
-        } catch (headError) {
-            // Se o erro for 404 (Not Found), o objeto não existe
-            if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
-                return { exists: false, lastModified: null };
-            }
-            // Outros erros são propagados
-            throw headError;
-        }
-    } catch (error) {
-        console.error('    [getThumbnailMetadata] Erro ao buscar metadata do thumbnail:', error.message);
-        return { exists: false, lastModified: null };
     }
 }
 
@@ -495,36 +341,7 @@ async function getThumbnailMetadata(thumbnailKey) {
  * @returns {Promise<string>} URL pública do thumbnail no S3
  */
 async function uploadThumbnailToS3(thumbnailBuffer, key) {
-    if (!isS3Configured || !s3Client) {
-        throw new Error('S3 não está configurado. Configure as variáveis de ambiente AWS.');
-    }
-
-    try {
-        console.log('    [uploadThumbnailToS3] Fazendo upload do thumbnail...');
-        console.log('    [uploadThumbnailToS3] Key:', key);
-        console.log('    [uploadThumbnailToS3] Tamanho:', thumbnailBuffer.length, 'bytes');
-
-        const command = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: key,
-            Body: thumbnailBuffer,
-            ContentType: 'image/png',
-            ACL: 'public-read'
-        });
-
-        await s3Client.send(command);
-        console.log('    [uploadThumbnailToS3] Upload do thumbnail concluído com sucesso');
-
-        // Construir URL pública
-        const publicUrl = getS3PublicUrl(key);
-        console.log('    [uploadThumbnailToS3] URL pública do thumbnail:', publicUrl);
-
-        return publicUrl;
-    } catch (error) {
-        console.error('    [uploadThumbnailToS3] Erro ao fazer upload do thumbnail:', error.message);
-        console.error('    [uploadThumbnailToS3] Stack:', error.stack);
-        throw error;
-    }
+    return await _uploadObjectToS3(thumbnailBuffer, key, 'image/png');
 }
 
 module.exports = {
@@ -535,7 +352,6 @@ module.exports = {
     listObjects,
     getDrawingsFromS3,
     getS3PublicUrl,
-    getThumbnailUrl,
     getThumbnailKey,
     getThumbnailFilename,
     extractKeyFromUrl,

@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorir - Pintar</title>
+    <meta name="description" id="meta-description" content="">
+    <title>Color - Paint</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/styles/main.css">
 </head>
@@ -12,15 +13,18 @@
         <aside class="color-palette">
             <header>
                 <a href="#" id="back-link" class="back-link">← Back</a>
-                <h2>Cores</h2>
+                <h2>Colors</h2>
             </header>
             <div id="color-grid" class="color-grid">
                 <!-- Cores serão carregadas aqui -->
             </div>
         </aside>
         <main class="drawing-area">
+            <div class="drawing-header">
+                <h1 id="drawing-title" style="display: none;"></h1>
+                <a href="javascript:void(0)" id="download-link" class="download-link" title="Download image">⬇ Download</a>
+            </div>
             <div id="canvas-container" class="canvas-container">
-                <a href="#" id="download-link" class="download-link" title="Baixar imagem">⬇ Download</a>
                 <!-- Canvas será criado aqui -->
             </div>
         </main>

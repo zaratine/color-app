@@ -45,13 +45,13 @@ export async function generateDrawing(theme) {
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
             console.error('Resposta não é JSON:', text);
-            throw new Error('Servidor retornou uma resposta inválida. Verifique se o servidor está rodando corretamente.');
+            throw new Error('Server returned an invalid response. Please check if the server is running correctly.');
         }
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || 'Erro ao gerar desenho');
+            throw new Error(data.error || 'Error generating drawing');
         }
 
         return data;

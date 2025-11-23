@@ -1,17 +1,65 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorir - Desenhos</title>
+    <title>Color - Drawings</title>
+    <meta name="description" content="Free coloring pages for kids! Print or Color Online. Explore our collection of coloring pages.">
+    <meta id="meta-title" name="title" content="Color - Drawings">
+    <link rel="canonical" href="">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/styles/main.css">
+    <script>
+        // Atualizar H1 imediatamente da URL para evitar piscar
+        (function() {
+            function getCategoryFromUrl() {
+                const path = window.location.pathname;
+                
+                // Formato novo: /en/:category
+                const categoryMatch = path.match(/^\/en\/([^\/]+)$/);
+                if (categoryMatch) {
+                    return decodeURIComponent(categoryMatch[1]);
+                }
+                
+                // Formato antigo: ?cat=...
+                const params = new URLSearchParams(window.location.search);
+                return params.get('cat');
+            }
+            
+            function capitalizeWords(str) {
+                if (!str) return '';
+                return str
+                    .toLowerCase()
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            }
+            
+            function updateH1() {
+                const category = getCategoryFromUrl();
+                if (category) {
+                    const friendlyName = capitalizeWords(category);
+                    const title = document.getElementById('category-title');
+                    if (title) {
+                        title.textContent = friendlyName + ' Coloring Pages';
+                    }
+                }
+            }
+            
+            // Executar imediatamente se o DOM já estiver pronto
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', updateH1);
+            } else {
+                updateH1();
+            }
+        })();
+    </script>
 </head>
 <body>
     <main class="container">
         <header>
             <a href="/" class="back-link">← Back</a>
-            <h1 id="category-title">Desenhos</h1>
+            <h1 id="category-title">Drawings</h1>
         </header>
         <div id="drawings-grid" class="drawings-grid">
             <!-- Desenhos serão carregados aqui -->

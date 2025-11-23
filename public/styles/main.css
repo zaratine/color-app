@@ -25,25 +25,55 @@ main.container {
     padding: 3rem 1.5rem;
 }
 
+/* H1 Principal da página inicial */
+main.container > h1,
+main.container > header h1 {
+    color: white;
+    text-align: center;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+
+/* Texto introdutório SEO */
+.intro-text {
+    /*background: rgba(255, 255, 255, 0.95);*/
+    /*backdrop-filter: blur(10px);*/
+    /*border-radius: 16px;*/
+    /*padding: 2rem 2.5rem;*/
+    margin: 0 auto 3rem auto;
+    max-width: 1200px;
+    /*box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);*/
+}
+
+.intro-text p {
+    color: #ffffff;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin: 0;
+    text-align: justify;
+    letter-spacing: 0.2px;
+}
+
+/* Intro-text do topo centralizado */
+main.container > .intro-text p,
+main.container > header .intro-text p {
+    text-align: center;
+}
+
 /* Página de Categorias */
 main.container header h1 {
     color: white;
     text-align: center;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     font-size: 2.5rem;
     font-weight: 700;
 }
 
-.custom-drawing-section h1 {
-    color: #2d2d2d;
-    text-align: center;
-    margin: 0 0 2.5rem 0;
-    font-size: 2.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.5px;
-}
 
 .categories-grid {
     display: grid;
@@ -203,10 +233,37 @@ main.container header h1 {
     flex: 1;
     background: #f5f5f5;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 2rem;
     overflow: auto;
+}
+
+.drawing-header {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+#drawing-title {
+    color: #2d2d2d;
+    text-align: center;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .canvas-container {
@@ -221,7 +278,6 @@ main.container header h1 {
     justify-content: center;
     overflow: auto;
     box-sizing: border-box;
-    position: relative;
 }
 
 .canvas-container canvas {
@@ -235,9 +291,6 @@ main.container header h1 {
 }
 
 .download-link {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
     background: var(--primary-color);
     color: white;
     padding: 0.5rem 0.875rem;
@@ -247,7 +300,11 @@ main.container header h1 {
     font-size: 0.8rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 1rem;
+    position: relative;
     z-index: 10;
+    cursor: pointer;
 }
 
 .download-link:hover {
@@ -287,19 +344,38 @@ main.container header h1 {
 
 /* Seção de desenho customizado */
 .custom-drawing-section {
-    background: white;
-    border-radius: 20px;
-    padding: 3rem 3rem 2rem 3rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    border-radius: 24px;
+    padding: 1.5rem 2rem;
     margin-bottom: 3rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    max-width: 780px;
+    box-shadow: 0 4px 20px rgba(138, 43, 226, 0.15), 0 0 0 1px rgba(138, 43, 226, 0.1);
+    max-width: 900px;
     margin-left: auto;
     margin-right: auto;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-drawing-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #8a2be2, #4169e1, #00bfff, #8a2be2);
+    background-size: 200% 100%;
+    animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .custom-drawing-section:hover {
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 8px 30px rgba(138, 43, 226, 0.25), 0 0 0 1px rgba(138, 43, 226, 0.2);
     transform: translateY(-2px);
 }
 
@@ -318,87 +394,142 @@ main.container header h1 {
     letter-spacing: 0.8px;
 }
 
+.about-section {
+    margin-top: 5rem;
+    padding-top: 3rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.about-section h2 {
+    color: white;
+    text-align: center;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.25);
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0 0 2rem 0;
+    letter-spacing: 0.5px;
+}
+
+.about-section .intro-text {
+    margin: 0 auto;
+}
+
+.custom-drawing-section .custom-drawing-title {
+    text-align: center;
+    color: #2d2d2d;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0 0 1.25rem 0;
+    line-height: 1.3;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, #8a2be2 0%, #4169e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 .custom-drawing-form {
     max-width: 100%;
     margin: 0 auto;
 }
 
-.form-group {
-    margin-bottom: 1.75rem;
+.form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0;
 }
 
 .theme-input {
-    width: 100%;
-    padding: 1.125rem 1.5rem;
-    border: 2px solid #e8e8e8;
-    border-radius: 12px;
-    font-size: 1.05rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.875rem 1.25rem;
+    border: 1px solid #dfe1e5;
+    border-radius: 24px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
     box-sizing: border-box;
     font-family: inherit;
-    background: #fafafa;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .theme-input:hover {
-    background: #ffffff;
-    border-color: #d0d0d0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    border-color: #dfe1e5;
 }
 
 .theme-input:focus {
     outline: none;
-    border-color: var(--primary-color);
-    background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    border-color: #8a2be2;
+    box-shadow: 0 2px 8px rgba(138, 43, 226, 0.25), 0 0 0 3px rgba(138, 43, 226, 0.1);
 }
 
 .theme-input::placeholder {
-    color: #a0a0a0;
-}
-
-.button-group {
-    margin-bottom: 0;
-    text-align: center;
+    color: #9aa0a6;
 }
 
 .generate-button {
-    padding: 1.125rem 3.5rem;
-    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    padding: 0.875rem 1.25rem;
+    background: linear-gradient(135deg, #8a2be2 0%, #4169e1 100%);
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 1.125rem;
+    border-radius: 24px;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 16px rgba(74, 144, 226, 0.35);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    min-width: fit-content;
+    max-width: 160px;
+    position: relative;
+    overflow: hidden;
+}
+
+.generate-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.generate-button:hover:not(:disabled)::before {
+    left: 100%;
 }
 
 .generate-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #357abd 0%, #2a5f96 100%);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(74, 144, 226, 0.45);
+    background: linear-gradient(135deg, #7b1fa2 0%, #3a5bc9 100%);
+    box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+    transform: translateY(-1px);
 }
 
 .generate-button:active:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+    background: linear-gradient(135deg, #6a1b8a 0%, #2e4ba8 100%);
+    box-shadow: 0 2px 6px rgba(138, 43, 226, 0.3);
+    transform: translateY(0);
 }
 
 .generate-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 4px 16px rgba(74, 144, 226, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .generation-status {
     text-align: center;
     padding: 0;
     border-radius: 10px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    margin-top: 0;
+    margin-top: 0.75rem;
     min-height: 0;
     transition: all 0.3s ease;
     display: none;
@@ -408,24 +539,21 @@ main.container header h1 {
     background: #e3f2fd;
     color: #1976d2;
     display: block;
-    padding: 0.875rem 1rem;
-    margin-top: 1.25rem;
+    padding: 0.75rem 1rem;
 }
 
 .generation-status.success {
     background: #e8f5e9;
     color: #2e7d32;
     display: block;
-    padding: 0.875rem 1rem;
-    margin-top: 1.25rem;
+    padding: 0.75rem 1rem;
 }
 
 .generation-status.error {
     background: #ffebee;
     color: #c62828;
     display: block;
-    padding: 0.875rem 1rem;
-    margin-top: 1.25rem;
+    padding: 0.75rem 1rem;
 }
 
 /* Loading Spinner */
@@ -475,19 +603,38 @@ main.container header h1 {
         padding: 1.5rem 1rem;
     }
     
-    .custom-drawing-section {
-        padding: 2.5rem 2rem 1.75rem 2rem;
-        margin-bottom: 2rem;
-        border-radius: 16px;
-    }
-    
-    .custom-drawing-section h1 {
+    main.container > h1,
+    main.container > header h1 {
         font-size: 1.85rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
     
-    .form-group {
-        margin-bottom: 1.5rem;
+    .intro-text {
+        padding: 1.5rem 1.5rem;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+    }
+    
+    .intro-text p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        text-align: left;
+    }
+    
+    .custom-drawing-section {
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 2rem;
+        border-radius: 20px;
+    }
+    
+    .custom-drawing-section .custom-drawing-title {
+        font-size: 1.15rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0.75rem;
     }
     
     .categories-divider {
@@ -499,13 +646,15 @@ main.container header h1 {
     }
     
     .theme-input {
-        padding: 1rem 1.25rem;
-        font-size: 1rem;
+        padding: 0.875rem 1.25rem;
+        font-size: 0.95rem;
+        width: 100%;
     }
     
     .generate-button {
-        padding: 1rem 2.5rem;
-        font-size: 1rem;
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
+        width: 100%;
     }
     
     .paint-container {
@@ -516,12 +665,6 @@ main.container header h1 {
         width: 100%;
         height: auto;
         max-height: 50vh;
-    }
-    
-    .generate-button {
-        width: 100%;
-        padding: 0.875rem 2rem;
-        font-size: 1rem;
     }
     
     .categories-grid {
@@ -539,11 +682,28 @@ main.container header h1 {
         gap: 1rem;
     }
     
+    .drawing-header {
+        margin-bottom: 1rem;
+    }
+    
+    #drawing-title {
+        font-size: 1.5rem;
+    }
+    
     .download-link {
-        top: 0.75rem;
-        right: 0.75rem;
         padding: 0.4rem 0.7rem;
         font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+    
+    .about-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+    }
+    
+    .about-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
     }
 }
 

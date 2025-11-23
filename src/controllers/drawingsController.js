@@ -10,7 +10,7 @@ async function getDrawings(req, res) {
         res.json(database);
     } catch (error) {
         console.error('  ✗ Erro ao obter desenhos:', error);
-        res.status(500).json({ error: 'Erro ao obter desenhos' });
+        res.status(500).json({ error: 'Error getting drawings' });
     }
 }
 
@@ -24,7 +24,7 @@ async function createDrawing(req, res) {
         
         if (!data.theme || !data.theme.trim()) {
             console.log('  ✗ Tema não fornecido');
-            return res.status(400).json({ error: 'Tema não fornecido' });
+            return res.status(400).json({ error: 'Theme not provided' });
         }
 
         console.log(`  → Tema recebido: "${data.theme.trim()}"`);
@@ -48,7 +48,7 @@ async function createDrawing(req, res) {
         console.error('  ✗ Stack trace:', error.stack);
         const statusCode = error.statusCode || 500;
         res.status(statusCode).json({ 
-            error: error.message || 'Erro ao gerar desenho' 
+            error: error.message || 'Error generating drawing' 
         });
     }
 }

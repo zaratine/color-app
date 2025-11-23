@@ -3,28 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color - Create your own drawing</title>
+    <title>Free Coloring Pages for Kids – Print or Color Online | AI-Powered Drawing Generator</title>
+    <meta name="description" content="Free coloring pages for kids! Color online or print. Explore animals, nature, characters, food, and more. Use our AI-powered drawing generator to create custom coloring pages instantly. No registration required.">
+    <link rel="canonical" href="https://yourdomain.com/">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body>
     <main class="container">
+        <header>
+            <h1>Free Coloring Pages for Kids – Print or Color Online</h1>
+            
+            <div class="intro-text">
+                <p>Choose from hundreds of free coloring pages or use AI to create your own.</p>
+            </div>
+        </header>
+
         <!-- Formulário para gerar desenho customizado -->
         <div class="custom-drawing-section">
-            <h1>🎨 Create your own drawing</h1>
+            <h2 class="custom-drawing-title">Generate images for coloring using AI</h2>
             <form id="custom-drawing-form" class="custom-drawing-form">
-                <div class="form-group">
+                <div class="form-row">
                     <input 
                         type="text" 
                         id="drawing-theme" 
-                        placeholder="Enter what you want to paint (e.g., a cat, a princess, a car...)" 
+                        placeholder="✨ Describe what you want to paint and AI will create it (e.g., a cat, a princess, a car...)" 
                         required
                         class="theme-input"
                     >
-                </div>
-                <div class="button-group">
                     <button type="submit" class="generate-button" id="generate-btn">
-                        🎨 Generate Drawing
+                        ⚡ Generate with AI
                     </button>
                 </div>
                 <div id="generation-status" class="generation-status"></div>
@@ -38,6 +46,13 @@
         <div id="categories-grid" class="categories-grid">
             <!-- Categorias serão carregadas aqui -->
         </div>
+
+        <section class="about-section">
+            <h2>About Our Free Coloring Pages For Kids</h2>
+            <div class="intro-text">
+                <p>Welcome to our free coloring pages website! We offer a vast collection of printable and online coloring pages for kids of all ages. Explore our diverse categories including animals, nature, characters, food, objects, and more. Each coloring page is carefully designed to spark creativity and provide hours of fun. Use our innovative AI-powered drawing generator to create custom coloring pages based on your child's imagination – simply describe what you want to paint, and our AI will generate a unique coloring page instantly. Whether you prefer to color online with our digital tools or print the pages for offline fun, we have everything you need. All our coloring pages are completely free, with no registration required. Start coloring today and let your creativity shine!</p>
+            </div>
+        </section>
     </main>
     <script type="module" src="/js/ui/categories.js"></script>
     <script type="module" src="/js/ui/custom-drawing.js"></script>

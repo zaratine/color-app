@@ -34,9 +34,9 @@ function getErrorMessage(error) {
     
     // Mensagens mais amigáveis para erros comuns
     if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        errorMessage = 'Erro de conexão. Verifique se o servidor está rodando.';
+        errorMessage = 'Connection error. Please check if the server is running.';
     } else if (errorMessage.includes('resposta inválida')) {
-        errorMessage = 'Erro no servidor. Verifique se o servidor está rodando e se a API está configurada corretamente.';
+        errorMessage = 'Server error. Please check if the server is running and if the API is configured correctly.';
     }
     
     return errorMessage;
@@ -58,20 +58,20 @@ function initCustomDrawingForm() {
         
         const theme = themeInput.value.trim();
         if (!theme) {
-            showStatus(statusDiv, 'Por favor, digite um tema para o desenho.', 'error');
+            showStatus(statusDiv, 'Please enter a theme for the drawing.', 'error');
             return;
         }
 
         // Desabilitar botão e mostrar status
         generateBtn.disabled = true;
-        generateBtn.textContent = '⏳ Gerando...';
-        showStatus(statusDiv, 'Gerando seu desenho personalizado... Isso pode levar alguns segundos.', 'loading');
+        generateBtn.textContent = '⏳ Generating...';
+        showStatus(statusDiv, 'Generating your custom drawing... This may take a few seconds.', 'loading');
 
         try {
             const data = await generateDrawing(theme);
 
             // Sucesso - redirecionar para a página de pintura
-            showStatus(statusDiv, '✅ Desenho gerado com sucesso! Redirecionando...', 'success');
+            showStatus(statusDiv, '✅ Drawing generated successfully! Redirecting...', 'success');
             
             // Aguardar um pouco antes de redirecionar
             setTimeout(() => {
@@ -82,9 +82,9 @@ function initCustomDrawingForm() {
         } catch (error) {
             console.error('Erro ao gerar desenho:', error);
             const errorMessage = getErrorMessage(error);
-            showStatus(statusDiv, `❌ Erro: ${errorMessage}`, 'error');
+            showStatus(statusDiv, `❌ Error: ${errorMessage}`, 'error');
             generateBtn.disabled = false;
-            generateBtn.textContent = '🎨 Gerar Desenho';
+            generateBtn.textContent = '🎨 Generate Drawing';
         }
     });
 }

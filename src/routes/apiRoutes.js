@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDrawings, createDrawing } = require('../controllers/drawingsController');
-const { extractKeyFromUrl, getObjectFromS3, getThumbnailUrl, getThumbnailKey, isS3Available, objectExistsInS3, uploadThumbnailToS3: uploadThumbnailToS3Direct } = require('../services/s3Service');
+const { extractKeyFromUrl, getObjectFromS3, getThumbnailKey, isS3Available, objectExistsInS3, uploadThumbnailToS3: uploadThumbnailToS3Direct } = require('../services/s3Service');
 const { generateThumbnailFromUrl, thumbnailExistsInS3, getOriginalKeyFromThumbnailKey, generateThumbnail } = require('../services/thumbnailService');
 
 // GET /api/drawings - Lista todos os desenhos
