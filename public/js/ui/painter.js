@@ -709,23 +709,18 @@ function downloadImage() {
 function initDownloadButton() {
     const downloadLink = document.getElementById('download-link');
     if (downloadLink) {
-        // Remover event listeners anteriores se houver (usando onclick = null)
+        // Remover event listeners anteriores se houver
         downloadLink.onclick = null;
+        // Clonar o elemento para remover todos os event listeners
+        const newDownloadLink = downloadLink.cloneNode(true);
+        downloadLink.parentNode.replaceChild(newDownloadLink, downloadLink);
         
-        downloadLink.addEventListener('click', (e) => {
+        newDownloadLink.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Download button clicked');
             downloadImage();
         });
-        
-        // Também adicionar como fallback usando onclick
-        downloadLink.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Download button clicked (onclick)');
-            downloadImage();
-        };
     } else {
         console.error('Download link not found');
     }

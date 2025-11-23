@@ -25,7 +25,7 @@ main.container {
     padding: 3rem 1.5rem;
 }
 
-/* H1 Principal da página inicial */
+/* H1 Principal */
 main.container > h1,
 main.container > header h1 {
     color: white;
@@ -38,15 +38,16 @@ main.container > header h1 {
     letter-spacing: -0.5px;
 }
 
-/* Texto introdutório SEO */
+main.container header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Texto introdutório */
 .intro-text {
-    /*background: rgba(255, 255, 255, 0.95);*/
-    /*backdrop-filter: blur(10px);*/
-    /*border-radius: 16px;*/
-    /*padding: 2rem 2.5rem;*/
     margin: 0 auto 3rem auto;
     max-width: 1200px;
-    /*box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);*/
 }
 
 .intro-text p {
@@ -58,23 +59,12 @@ main.container > header h1 {
     letter-spacing: 0.2px;
 }
 
-/* Intro-text do topo centralizado */
 main.container > .intro-text p,
 main.container > header .intro-text p {
     text-align: center;
 }
 
-/* Página de Categorias */
-main.container header h1 {
-    color: white;
-    text-align: center;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    margin-bottom: 1rem;
-    font-size: 2.5rem;
-    font-weight: 700;
-}
-
-
+/* Grids */
 .categories-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -82,7 +72,16 @@ main.container header h1 {
     padding: 0.5rem 0 3.5rem 0;
 }
 
-.category-card {
+.drawings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 2.25rem;
+    padding: 0;
+}
+
+/* Cards */
+.category-card,
+.drawing-card {
     background: white;
     border-radius: 18px;
     padding: 1.5rem 1.5rem;
@@ -92,7 +91,12 @@ main.container header h1 {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.category-card:hover {
+.drawing-card {
+    box-shadow: var(--shadow);
+}
+
+.category-card:hover,
+.drawing-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16),
                 0 0 0 3px rgba(74, 144, 226, 0.8),
@@ -102,7 +106,9 @@ main.container header h1 {
                 0 0 120px rgba(74, 144, 226, 0.15);
 }
 
-.category-thumbnail {
+/* Thumbnails */
+.category-thumbnail,
+.drawing-thumbnail {
     width: 160px;
     height: 100px;
     object-fit: contain;
@@ -111,7 +117,8 @@ main.container header h1 {
     border-radius: 8px;
 }
 
-.category-name {
+.category-name,
+.drawing-name {
     font-size: 1.125rem;
     font-weight: 600;
     color: #2d2d2d;
@@ -119,7 +126,11 @@ main.container header h1 {
     letter-spacing: 0.2px;
 }
 
-/* Seção de outras categorias na página de listagem */
+.drawing-name {
+    word-break: break-word;
+}
+
+/* Seção de outras categorias */
 .other-categories-section {
     margin-top: 4rem;
     padding-top: 3rem;
@@ -156,51 +167,6 @@ main.container header h1 {
     letter-spacing: 0.2px;
 }
 
-.drawings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 2.25rem;
-    padding: 0;
-}
-
-.drawing-card {
-    background: white;
-    border-radius: 18px;
-    padding: 1.5rem 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow);
-    text-align: center;
-}
-
-.drawing-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16),
-                0 0 0 3px rgba(74, 144, 226, 0.8),
-                0 0 30px rgba(74, 144, 226, 0.7),
-                0 0 60px rgba(74, 144, 226, 0.5),
-                0 0 90px rgba(74, 144, 226, 0.3),
-                0 0 120px rgba(74, 144, 226, 0.15);
-}
-
-.drawing-thumbnail {
-    width: 160px;
-    height: 100px;
-    object-fit: contain;
-    margin: 0 auto 1.5rem;
-    display: block;
-    border-radius: 8px;
-}
-
-.drawing-name {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #2d2d2d;
-    margin: 0;
-    letter-spacing: 0.2px;
-    word-break: break-word;
-}
-
 /* Página de Pintura */
 .paint-container {
     display: flex;
@@ -222,7 +188,7 @@ main.container header h1 {
 }
 
 .color-palette header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .color-palette h2 {
@@ -239,7 +205,6 @@ main.container header h1 {
     align-content: start;
     width: 100%;
     height: 100%;
-    /* Gap será definido dinamicamente pelo JavaScript */
 }
 
 .color-item {
@@ -285,9 +250,9 @@ main.container header h1 {
 
 #drawing-title {
     color: #2d2d2d;
-    text-align: center;
+    text-align: left;
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.5px;
@@ -358,6 +323,23 @@ main.container header h1 {
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+.back-link:hover {
+    color: #fff;
+    transform: translateX(-3px);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.color-palette .back-link {
+    color: var(--primary-color);
+    text-shadow: none;
+}
+
+.color-palette .back-link:hover {
+    color: var(--hover-color);
+    text-shadow: none;
+    transform: translateX(-3px);
+}
+
 /* Breadcrumb */
 .breadcrumb {
     margin-bottom: 1rem;
@@ -414,7 +396,7 @@ main.container header h1 {
     opacity: 0.95;
 }
 
-/* Breadcrumb na página de pintura (fundo branco) */
+/* Breadcrumb na página de pintura */
 .breadcrumb-paint {
     margin-bottom: 1rem;
     padding-left: 0.5rem;
@@ -492,23 +474,6 @@ main.container header h1 {
 .breadcrumb-paint li[aria-current="page"] {
     font-weight: 600;
     color: #2d2d2d;
-    text-shadow: none;
-}
-
-.back-link:hover {
-    color: #fff;
-    transform: translateX(-3px);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* Back link na página de pintura (fundo branco) */
-.color-palette .back-link {
-    color: var(--primary-color);
-    text-shadow: none;
-}
-
-.color-palette .back-link:hover {
-    color: var(--hover-color);
     text-shadow: none;
 }
 
@@ -760,7 +725,6 @@ main.container header h1 {
     text-align: center;
 }
 
-/* Loading spinner para grids */
 .categories-grid .loading-container,
 .drawings-grid .loading-container {
     grid-column: 1 / -1;
@@ -867,7 +831,8 @@ main.container header h1 {
     }
     
     #drawing-title {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+        text-align: left;
     }
     
     .download-link {
@@ -913,4 +878,3 @@ main.container header h1 {
         font-size: 0.85rem;
     }
 }
-
