@@ -1,0 +1,14 @@
+<% if (typeof breadcrumb !== 'undefined' && Array.isArray(breadcrumb) && breadcrumb.length > 0) { %>
+<nav class="breadcrumb<%= typeof breadcrumbClass !== 'undefined' ? ' ' + breadcrumbClass : '' %>" aria-label="Breadcrumb">
+    <ol>
+        <% breadcrumb.forEach(function(item, index) { %>
+            <% if (index === breadcrumb.length - 1) { %>
+                <li aria-current="page"><%= item.name %></li>
+            <% } else { %>
+                <li><a href="<%= item.url || '#' %>"><%= item.name %></a></li>
+            <% } %>
+        <% }); %>
+    </ol>
+</nav>
+<% } %>
+

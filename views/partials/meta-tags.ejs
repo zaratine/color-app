@@ -1,0 +1,20 @@
+<% 
+    const title = meta.title || 'Free Coloring Pages for Kids';
+    const description = meta.description || 'Free coloring pages for kids! Print or Color Online.';
+    const ogTitle = meta.ogTitle || title;
+    const ogDescription = meta.ogDescription || description;
+    const canonical = meta.canonical || '';
+    const ogImage = meta.ogImage || null;
+%>
+<title><%= title %></title>
+<meta name="description" content="<%= description %>">
+<meta property="og:type" content="website">
+<meta property="og:title" content="<%= ogTitle %>">
+<meta property="og:description" content="<%= ogDescription %>">
+<% if (canonical) { %>
+<link rel="canonical" href="<%= canonical %>">
+<% } %>
+<% if (ogImage) { %>
+<meta property="og:image" content="<%= ogImage %>">
+<% } %>
+

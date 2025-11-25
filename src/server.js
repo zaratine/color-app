@@ -77,6 +77,10 @@ app.use('/api', apiRoutes);
 const fs = require('fs');
 const path = require('path');
 
+// Configurar EJS como view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '..', 'views'));
+
 // Logar informações sobre o diretório público
 console.log('📁 Configuração de arquivos estáticos:');
 console.log('  PUBLIC_DIR:', PUBLIC_DIR);

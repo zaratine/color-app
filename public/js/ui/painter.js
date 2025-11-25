@@ -40,84 +40,8 @@ function getFriendlyDrawingName(drawing) {
     return capitalizeWords(nameWithoutExt);
 }
 
-/**
- * Atualiza o título da página, h1 e meta description com o nome amigável do desenho
- * @param {string|Object} drawing - Nome do arquivo ou objeto do desenho
- */
-async function updatePageMetadata(drawing) {
-    const friendlyName = getFriendlyDrawingName(drawing);
-    const category = getCategoryFromUrl();
-    
-    // Atualizar breadcrumb com categoria
-    if (category) {
-        try {
-            const categoryData = await getCategoryData(category);
-            const categoryFriendlyName = categoryData ? categoryData.displayName : capitalizeWords(category);
-            
-            const breadcrumbCategory = document.getElementById('breadcrumb-category');
-            const breadcrumbCategoryLink = document.getElementById('breadcrumb-category-link');
-            if (breadcrumbCategory && breadcrumbCategoryLink) {
-                breadcrumbCategoryLink.textContent = categoryFriendlyName;
-                breadcrumbCategoryLink.href = getCategoryUrl(category);
-            }
-        } catch (error) {
-            console.error('Erro ao carregar dados da categoria para breadcrumb:', error);
-        }
-    }
-    
-    // Breadcrumb já foi atualizado pelo script inline no HTML
-    // Apenas atualizar se o nome amigável do desenho for diferente do slug
-    const breadcrumbDrawing = document.getElementById('breadcrumb-drawing');
-    if (breadcrumbDrawing) {
-        const span = breadcrumbDrawing.querySelector('span');
-        if (span && span.textContent !== friendlyName) {
-            // Atualizar apenas se o nome real for diferente do slug
-            span.textContent = friendlyName;
-        }
-    }
-    
-    // Atualizar título da página
-    const pageTitle = `${friendlyName} Coloring Page – Print or Color Online`;
-    document.title = pageTitle;
-    
-    // H1 já foi atualizado pelo script inline no HTML
-    // Apenas atualizar se o nome amigável do desenho for diferente do slug
-    const h1 = document.getElementById('drawing-title');
-    if (h1) {
-        const currentText = h1.textContent.replace(' Coloring Page', '');
-        if (currentText !== friendlyName) {
-            // Atualizar apenas se o nome real for diferente do slug
-            h1.textContent = `${friendlyName} Coloring Page`;
-        }
-        h1.style.display = 'block';
-    }
-    
-    // Atualizar meta description
-    const metaDescription = document.getElementById('meta-description');
-    const descriptionText = `Color online or download a free ${friendlyName} coloring page for kids. High-resolution drawing ready to print or color online. Fun and easy activity for children between 2 and 6 years old.`;
-    if (metaDescription) {
-        metaDescription.content = descriptionText;
-    }
-    
-    // Atualizar Open Graph meta tags
-    let ogTitle = document.getElementById('og-title');
-    if (!ogTitle) {
-        ogTitle = document.createElement('meta');
-        ogTitle.id = 'og-title';
-        ogTitle.setAttribute('property', 'og:title');
-        document.head.appendChild(ogTitle);
-    }
-    ogTitle.content = pageTitle;
-    
-    let ogDescription = document.getElementById('og-description');
-    if (!ogDescription) {
-        ogDescription = document.createElement('meta');
-        ogDescription.id = 'og-description';
-        ogDescription.setAttribute('property', 'og:description');
-        document.head.appendChild(ogDescription);
-    }
-    ogDescription.content = descriptionText;
-}
+// Meta tags agora são renderizadas no servidor via EJS
+// Não é mais necessário atualizar meta tags aqui
 
 // Paleta de 24 cores para crianças
 const COLOR_PALETTE = [
@@ -451,8 +375,7 @@ async function loadImage() {
         drawing = await getDrawingBySlug(drawingSlug, category);
         
         if (drawing) {
-            // Atualizar metadados da página com o nome amigável
-            await updatePageMetadata(drawing);
+            // Meta tags já são renderizadas no servidor via EJS
             
             // Obter URL do desenho encontrado
             const imageUrl = getDrawingUrl(drawing);
@@ -468,18 +391,11 @@ async function loadImage() {
             const imageUrlFromParams = getImageUrlFromUrl();
             if (imageUrlFromParams) {
                 imagePath = imageUrlFromParams;
-                // Tentar criar um desenho temporário para obter o nome amigável do slug
-                if (drawingSlug) {
-                    const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
-                    await updatePageMetadata(tempDrawing);
-                }
+                // Meta tags já são renderizadas no servidor via EJS
             } else {
                 // Último fallback: usar slug como nome de arquivo (pode não funcionar)
                 imagePath = `drawings/${category}/${drawingSlug}`;
-                if (drawingSlug) {
-                    const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
-                    await updatePageMetadata(tempDrawing);
-                }
+                // Meta tags já são renderizadas no servidor via EJS
             }
         }
     } catch (error) {
@@ -488,16 +404,10 @@ async function loadImage() {
         const imageUrlFromParams = getImageUrlFromUrl();
         if (imageUrlFromParams) {
             imagePath = imageUrlFromParams;
-            if (drawingSlug) {
-                const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
-                updatePageMetadata(tempDrawing);
-            }
+            // Meta tags já são renderizadas no servidor via EJS
         } else {
             imagePath = `drawings/${category}/${drawingSlug}`;
-            if (drawingSlug) {
-                const tempDrawing = { filename: drawingSlug.replace(/-/g, '_') + '.png' };
-                updatePageMetadata(tempDrawing);
-            }
+            // Meta tags já são renderizadas no servidor via EJS
         }
     }
     
@@ -650,7 +560,7 @@ function updateBackLink() {
     if (backLink && category) {
         backLink.href = getCategoryUrl(category);
     } else if (backLink) {
-        backLink.href = '/category';
+        backLink.href = '/';
     }
 }
 

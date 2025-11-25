@@ -1,6 +1,6 @@
 // UI - Renderização de desenhos de uma categoria
 
-import { getCategoryData, getDrawingsInCategory, getDrawingFilename, getDrawingUrl, getThumbnailUrl, getAllCategories } from '../services/drawingsService.js';
+import { getDrawingsInCategory, getDrawingFilename, getDrawingUrl, getThumbnailUrl, getAllCategories } from '../services/drawingsService.js';
 import { getCategoryFromUrl, getPaintUrl, getProxyUrl, isS3Url, getCategoryUrl } from '../utils/urlUtils.js';
 
 /**
@@ -51,80 +51,8 @@ export async function loadDrawings() {
     `;
 
     try {
-        // Obter dados da categoria e nome amigável
-        const categoryData = await getCategoryData(category);
-        const friendlyName = categoryData ? categoryData.displayName : capitalizeWords(category);
-        
-        // Atualizar breadcrumb
-        const breadcrumbCategory = document.getElementById('breadcrumb-category');
-        if (breadcrumbCategory) {
-            breadcrumbCategory.textContent = friendlyName;
-        }
-        
-        // Atualizar seção de descrição da categoria
-        const categoryDescription = document.querySelector('.category-description');
-        if (categoryDescription) {
-            const friendlyNameElements = categoryDescription.querySelectorAll('#category-friendly-name, #category-friendly-name-inline');
-            friendlyNameElements.forEach(el => {
-                if (el.id === 'category-friendly-name') {
-                    el.textContent = `${friendlyName} Coloring Pages`;
-                } else {
-                    el.textContent = friendlyName;
-                }
-            });
-        }
-        
-        // Atualizar título da página e meta tags
-        const pageTitle = `${friendlyName} Coloring Pages – Print or Color Online`;
-        document.title = pageTitle;
-        
-        // Atualizar meta title
-        let metaTitle = document.getElementById('meta-title');
-        if (!metaTitle) {
-            metaTitle = document.createElement('meta');
-            metaTitle.id = 'meta-title';
-            metaTitle.name = 'title';
-            document.head.appendChild(metaTitle);
-        }
-        metaTitle.content = pageTitle;
-        
-        // Atualizar meta description
-        let metaDescription = document.querySelector('meta[name="description"]');
-        if (!metaDescription) {
-            metaDescription = document.createElement('meta');
-            metaDescription.name = 'description';
-            document.head.appendChild(metaDescription);
-        }
-        const descriptionText = `Free ${friendlyName.toLowerCase()} coloring pages for kids! Print or Color Online. Explore our collection of ${friendlyName.toLowerCase()} coloring pages. High-resolution drawings ready to color.`;
-        metaDescription.content = descriptionText;
-        
-        // Atualizar Open Graph meta tags
-        let ogTitle = document.getElementById('og-title');
-        if (!ogTitle) {
-            ogTitle = document.createElement('meta');
-            ogTitle.id = 'og-title';
-            ogTitle.setAttribute('property', 'og:title');
-            document.head.appendChild(ogTitle);
-        }
-        ogTitle.content = pageTitle;
-        
-        let ogDescription = document.getElementById('og-description');
-        if (!ogDescription) {
-            ogDescription = document.createElement('meta');
-            ogDescription.id = 'og-description';
-            ogDescription.setAttribute('property', 'og:description');
-            document.head.appendChild(ogDescription);
-        }
-        ogDescription.content = descriptionText;
-        
-        // Atualizar canonical URL
-        let canonicalLink = document.querySelector('link[rel="canonical"]');
-        if (!canonicalLink) {
-            canonicalLink = document.createElement('link');
-            canonicalLink.rel = 'canonical';
-            document.head.appendChild(canonicalLink);
-        }
-        canonicalLink.href = window.location.href;
+        // Breadcrumb e meta tags agora são renderizadas no servidor via EJS
+        // Não é mais necessário atualizar esses elementos aqui
 
         const drawings = await getDrawingsInCategory(category);
         

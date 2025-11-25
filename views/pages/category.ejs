@@ -1,0 +1,34 @@
+<%
+    const categoryName = typeof categoryData !== 'undefined' && categoryData ? categoryData.friendlyName : 'Category';
+    const categorySlug = typeof categoryData !== 'undefined' && categoryData ? categoryData.slug : '';
+    
+    const breadcrumbItems = [
+        { name: 'Home', url: '/' },
+        { name: categoryName, url: categorySlug ? `/en/${encodeURIComponent(categorySlug)}` : '#' }
+    ];
+%>
+<main class="container">
+    <header>
+        <a href="/" class="back-link">← Back</a>
+        <%- include('../partials/breadcrumb', { breadcrumb: breadcrumbItems }) %>
+        <h1 id="category-title"><%= categoryName %> Coloring Pages</h1>
+    </header>
+    
+    <section class="category-description">
+        <p>
+            Explore our collection of <strong><%= categoryName %> Coloring Pages</strong> designed for kids from 2 to 6 years old.
+            Print your favorite <span><%= categoryName %></span> or color them online using our digital tools. 
+            All images are high-resolution and completely free!
+        </p>
+    </section>
+    <div id="drawings-grid" class="drawings-grid">
+        <!-- Desenhos serão carregados aqui -->
+    </div>
+    
+    <section class="other-categories-section">
+        <h2 class="other-categories-title">Other Categories</h2>
+        <div id="other-categories-grid" class="categories-grid">
+            <!-- Categorias aleatórias serão carregadas aqui -->
+        </div>
+    </section>
+</main>

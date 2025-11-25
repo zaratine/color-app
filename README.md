@@ -4,11 +4,12 @@ Um site interativo onde crianças podem escolher desenhos para colorir.
 
 ## Estrutura
 
-- `index.html` - Página inicial com seleção de categorias
-- `category.html` - Listagem de desenhos por categoria
-- `paint.html` - Interface de pintura
-- `styles/main.css` - Estilos principais
-- `js/` - Scripts JavaScript
+- `public/index.html` - Página inicial com seleção de categorias
+- `views/pages/category.ejs` - Template EJS para listagem de desenhos por categoria
+- `views/pages/paint.ejs` - Template EJS para interface de pintura
+- `views/layouts/main.ejs` - Layout base com head comum
+- `public/styles/main.css` - Estilos principais
+- `public/js/` - Scripts JavaScript
 - `drawings/` - Pasta com desenhos (PNG, JPG ou SVG) organizados por categorias
 
 ## Como Adicionar Novos Desenhos

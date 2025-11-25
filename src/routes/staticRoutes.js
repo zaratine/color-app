@@ -3,6 +3,14 @@ const express = require('express');
 const path = require('path');
 const { PUBLIC_DIR } = require('../config');
 const { getDrawingsDatabase } = require('../services/drawingsService');
+const { 
+    getCategoryPageData, 
+    getDrawingPageData, 
+    generateCategoryMetaTags, 
+    generateDrawingMetaTags,
+    generateMetaTags
+} = require('../utils/pageData');
+const { filenameToSlug, normalizeCategory } = require('../utils/urlMapping');
 
 const router = express.Router();
 
@@ -41,22 +49,19 @@ async function generateSitemap(req) {
         xml += '    <priority>1.0</priority>\n';
         xml += '  </url>\n';
         
-        // Adicionar página de pintura
-        xml += '  <url>\n';
-        xml += `    <loc>${baseUrl}/paint</loc>\n`;
-        xml += '    <changefreq>weekly</changefreq>\n';
-        xml += '    <priority>0.8</priority>\n';
-        xml += '  </url>\n';
-        
         // Adicionar categorias e desenhos
         for (const [category, categoryData] of Object.entries(database)) {
             if (!categoryData || !categoryData.drawings || categoryData.drawings.length === 0) {
                 continue;
             }
             
-            // URL da categoria (codificar para URL)
-            const categoryEncoded = encodeURIComponent(category);
-            const categoryUrl = `${baseUrl}/en/${categoryEncoded}`;
+            const normalizedCategorySlug = normalizeCategory(category);
+            const categorySlug = normalizedCategorySlug || (typeof category === 'string' ? category.trim() : '');
+            if (!categorySlug) {
+                continue;
+            }
+            // URL da categoria (codificada para o slug usado na rota)
+            const categoryUrl = `${baseUrl}/en/${encodeURIComponent(categorySlug)}`;
             
             // Adicionar URL da categoria
             xml += '  <url>\n';
@@ -78,10 +83,11 @@ async function generateSitemap(req) {
                     continue;
                 }
                 
-                // Remover extensão do nome do arquivo para a URL
-                const drawingName = drawingFilename.replace(/\.(svg|png|jpg|jpeg)$/i, '');
-                const drawingEncoded = encodeURIComponent(drawingName);
-                const drawingUrl = `${baseUrl}/en/${categoryEncoded}/${drawingEncoded}`;
+                const drawingSlug = filenameToSlug(drawingFilename);
+                if (!drawingSlug) {
+                    continue;
+                }
+                const drawingUrl = `${baseUrl}/en/${encodeURIComponent(categorySlug)}/${encodeURIComponent(drawingSlug)}`;
                 
                 xml += '  <url>\n';
                 xml += `    <loc>${drawingUrl}</loc>\n`;
@@ -123,36 +129,136 @@ router.get('/', (req, res, next) => {
     res.sendFile(path.resolve(PUBLIC_DIR, 'index.html'));
 });
 
-// Rota paint
-router.get('/paint', (req, res, next) => {
-    if (isStaticFile(req.path)) {
-        return next();
-    }
-    res.sendFile(path.resolve(PUBLIC_DIR, 'paint.html'));
-});
-
-// Rota category
-router.get('/category', (req, res, next) => {
-    if (isStaticFile(req.path)) {
-        return next();
-    }
-    res.sendFile(path.resolve(PUBLIC_DIR, 'category.html'));
-});
-
 // Nova rota amigável: /en/:category/:drawing (deve vir antes de /en/:category para evitar conflitos)
-router.get('/en/:category/:drawing', (req, res, next) => {
+router.get('/en/:category/:drawing', async (req, res, next) => {
     if (isStaticFile(req.path)) {
         return next();
     }
-    res.sendFile(path.resolve(PUBLIC_DIR, 'paint.html'));
+    
+    try {
+        const categorySlug = decodeURIComponent(req.params.category);
+        const drawingSlug = decodeURIComponent(req.params.drawing);
+
+        // Buscar dados do desenho
+        const drawingData = await getDrawingPageData(categorySlug, drawingSlug);
+        
+        // Se não encontrar o desenho, renderizar página genérica
+        if (!drawingData) {
+            console.warn(`Desenho não encontrado: ${categorySlug}/${drawingSlug}`);
+            const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+            const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+            const baseUrl = `${protocol}://${host}`;
+            return res.render('layouts/main', {
+                page: 'pages/paint',
+                bodyClass: 'paint-page',
+                scripts: ['/js/ui/painter.js', '/js/app.js'],
+                drawingData: { friendlyName: 'Drawing', category: { friendlyName: 'Category', slug: categorySlug }, slug: drawingSlug },
+                meta: generateMetaTags({
+                    title: 'Free Coloring Pages for Kids – Print or Color Online',
+                    description: 'Free coloring pages for kids! Print or Color Online.',
+                    url: `${baseUrl}/en/${encodeURIComponent(categorySlug)}/${encodeURIComponent(drawingSlug)}`
+                })
+            });
+        }
+        
+        // Gerar URL base
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+        const baseUrl = `${protocol}://${host}`;
+        
+        // Gerar meta tags
+        const meta = generateDrawingMetaTags(drawingData, baseUrl);
+        
+        // Renderizar template EJS
+        res.render('layouts/main', {
+            page: 'pages/paint',
+            bodyClass: 'paint-page',
+            scripts: ['/js/ui/painter.js', '/js/app.js'],
+            drawingData,
+            meta
+        });
+    } catch (error) {
+        console.error('Erro ao renderizar página de desenho:', error);
+        // Renderizar página genérica em caso de erro
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+        const baseUrl = `${protocol}://${host}`;
+        res.render('layouts/main', {
+            page: 'pages/paint',
+            bodyClass: 'paint-page',
+            scripts: ['/js/ui/painter.js', '/js/app.js'],
+            drawingData: { friendlyName: 'Drawing', category: { friendlyName: 'Category', slug: '' }, slug: '' },
+            meta: generateMetaTags({
+                title: 'Free Coloring Pages for Kids – Print or Color Online',
+                description: 'Free coloring pages for kids! Print or Color Online.',
+                url: `${baseUrl}/paint`
+            })
+        });
+    }
 });
 
 // Nova rota amigável: /en/:category (categoria direta, sem "category" no path)
-router.get('/en/:category', (req, res, next) => {
+router.get('/en/:category', async (req, res, next) => {
     if (isStaticFile(req.path)) {
         return next();
     }
-    res.sendFile(path.resolve(PUBLIC_DIR, 'category.html'));
+    
+    try {
+        const categorySlug = decodeURIComponent(req.params.category);
+        
+        // Buscar dados da categoria
+        const categoryData = await getCategoryPageData(categorySlug);
+        
+        // Se não encontrar a categoria, renderizar página genérica
+        if (!categoryData) {
+            console.warn(`Categoria não encontrada: ${categorySlug}`);
+            const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+            const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+            const baseUrl = `${protocol}://${host}`;
+            return res.render('layouts/main', {
+                page: 'pages/category',
+                scripts: ['/js/ui/drawings.js', '/js/app.js'],
+                categoryData: null,
+                meta: generateMetaTags({
+                    title: 'Free Coloring Pages for Kids – Print or Color Online',
+                    description: 'Free coloring pages for kids! Print or Color Online.',
+                    url: `${baseUrl}/en/${encodeURIComponent(categorySlug)}`
+                })
+            });
+        }
+        
+        // Gerar URL base
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+        const baseUrl = `${protocol}://${host}`;
+        
+        // Gerar meta tags
+        const meta = generateCategoryMetaTags(categoryData, baseUrl);
+        
+        // Renderizar template EJS
+        res.render('layouts/main', {
+            page: 'pages/category',
+            scripts: ['/js/ui/drawings.js', '/js/app.js'],
+            categoryData,
+            meta
+        });
+    } catch (error) {
+        console.error('Erro ao renderizar página de categoria:', error);
+        // Renderizar página genérica em caso de erro
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+        const baseUrl = `${protocol}://${host}`;
+        res.render('layouts/main', {
+            page: 'pages/category',
+            scripts: ['/js/ui/drawings.js', '/js/app.js'],
+            categoryData: null,
+            meta: generateMetaTags({
+                title: 'Free Coloring Pages for Kids – Print or Color Online',
+                description: 'Free coloring pages for kids! Print or Color Online.',
+                url: `${baseUrl}/category`
+            })
+        });
+    }
 });
 
 module.exports = router;

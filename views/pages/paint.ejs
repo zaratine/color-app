@@ -1,0 +1,39 @@
+<%
+    const drawingName = typeof drawingData !== 'undefined' && drawingData ? drawingData.friendlyName : 'Drawing';
+    const categoryName = typeof drawingData !== 'undefined' && drawingData && drawingData.category ? drawingData.category.friendlyName : 'Category';
+    const categorySlug = typeof drawingData !== 'undefined' && drawingData && drawingData.category ? drawingData.category.slug : '';
+    const drawingSlug = typeof drawingData !== 'undefined' && drawingData ? drawingData.slug : '';
+    
+    const breadcrumbItems = [
+        { name: 'Home', url: '/' },
+        { 
+            name: categoryName, 
+            url: categorySlug ? `/en/${encodeURIComponent(categorySlug)}` : '#' 
+        },
+        { name: drawingName, url: '#' }
+    ];
+%>
+<div class="paint-container">
+    <aside class="color-palette">
+        <header>
+            <a href="#" id="back-link" class="back-link">← Back</a>
+            <%- include('../partials/breadcrumb', { breadcrumb: breadcrumbItems, breadcrumbClass: 'breadcrumb-paint' }) %>
+            <h2>Colors</h2>
+        </header>
+        <div id="color-grid" class="color-grid">
+            <!-- Cores serão carregadas aqui -->
+        </div>
+    </aside>
+    <main class="drawing-area">
+        <div class="drawing-header">
+            <h1 id="drawing-title"><%= drawingName %> Coloring Page</h1>
+            <div class="download-buttons">
+                <a href="javascript:void(0)" id="download-link" class="download-link" title="Download colored image">⬇ Download Colored</a>
+                <a href="javascript:void(0)" id="download-blank-link" class="download-link" title="Download blank image">⬇ Download Blank</a>
+            </div>
+        </div>
+        <div id="canvas-container" class="canvas-container">
+            <!-- Canvas será criado aqui -->
+        </div>
+    </main>
+</div>

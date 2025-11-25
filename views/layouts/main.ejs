@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script type="module" src="/js/utils/google-analytics.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <%- include('../partials/meta-tags', { meta: typeof meta !== 'undefined' ? meta : {} }) %>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body<%= typeof bodyClass !== 'undefined' ? ' class="' + bodyClass + '"' : '' %>>
+    <%- include('../' + page) %>
+    
+    <% if (typeof scripts !== 'undefined' && Array.isArray(scripts)) { %>
+        <% scripts.forEach(function(script) { %>
+            <script type="module" src="<%= script %>"></script>
+        <% }); %>
+    <% } %>
+</body>
+</html>
