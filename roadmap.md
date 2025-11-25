@@ -4,6 +4,12 @@ SEO
 - Implementar melhorias do PageSpeed para dispositivos móveis
 - Implementar og:image em todas as páginas -> <meta property="og:image" content="[url_image_here]">
 
+TAGS
+- Incluir "accessories" no script de tags
+- Remover coisas que não são season da lista de valores
+- Usar lista de tags para fazer a geração de imagens 
+- Talvez incluir "subject", no caso, a coisa principal (ex: twin girls...)
+
 
 
 I18N
