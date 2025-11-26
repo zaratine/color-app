@@ -15,6 +15,117 @@ let container = null;
 let resizeTimeout = null;
 let drawing = null;
 
+// Armazenar a cor atual do cursor
+let currentCursorColor = null;
+let customCursorElement = null;
+let isMouseOverCanvas = false;
+
+/**
+ * Cria o elemento de cursor visual customizado
+ * Gota de tinta ao lado do cursor oficial para indicar a cor selecionada
+ */
+function createCustomCursorElement() {
+    if (customCursorElement) return;
+    
+    // Container da gota
+    customCursorElement = document.createElement('div');
+    customCursorElement.id = 'custom-color-cursor';
+    customCursorElement.style.cssText = `
+        position: fixed;
+        width: 14px;
+        height: 18px;
+        pointer-events: none;
+        z-index: 99999;
+        transform: translate(10px, 4px);
+        display: none;
+    `;
+    
+    // A gota em si - usando clip-path para forma perfeita
+    const drop = document.createElement('div');
+    drop.id = 'color-drop';
+    drop.style.cssText = `
+        width: 100%;
+        height: 100%;
+        clip-path: path('M7 0 C7 0, 14 10, 14 13 C14 16, 11 18, 7 18 C3 18, 0 16, 0 13 C0 10, 7 0, 7 0 Z');
+        box-shadow: inset 2px 2px 4px rgba(255,255,255,0.4);
+        transition: background-color 0.1s ease;
+        filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
+    `;
+    
+    customCursorElement.appendChild(drop);
+    document.body.appendChild(customCursorElement);
+}
+
+/**
+ * Atualiza a posição do cursor visual
+ */
+function updateCursorPosition(e) {
+    if (!customCursorElement || !isMouseOverCanvas) return;
+    customCursorElement.style.left = e.clientX + 'px';
+    customCursorElement.style.top = e.clientY + 'px';
+}
+
+/**
+ * Mostra o cursor visual customizado
+ * O cursor oficial do sistema continua visível
+ */
+function showCustomCursor() {
+    if (!customCursorElement) return;
+    isMouseOverCanvas = true;
+    customCursorElement.style.display = 'block';
+}
+
+/**
+ * Esconde o cursor visual customizado
+ */
+function hideCustomCursor() {
+    if (!customCursorElement) return;
+    isMouseOverCanvas = false;
+    customCursorElement.style.display = 'none';
+}
+
+/**
+ * Atualiza o cursor do canvas para mostrar a cor selecionada
+ * Usa uma gota de tinta que segue o mouse (funciona em todos os navegadores, incluindo Arc)
+ * @param {string} color - Cor em formato hex
+ */
+export function updateCanvasCursor(color) {
+    if (!canvas) return;
+    
+    currentCursorColor = color;
+    
+    // Criar elemento de cursor se não existir
+    createCustomCursorElement();
+    
+    // Atualizar a cor da gota
+    const drop = document.getElementById('color-drop');
+    if (drop) {
+        drop.style.backgroundColor = color;
+    }
+}
+
+/**
+ * Inicializa os event listeners para o cursor visual
+ */
+function initCursorListeners() {
+    if (!canvas) return;
+    
+    // Criar cursor visual
+    createCustomCursorElement();
+    
+    // Eventos do canvas
+    canvas.addEventListener('mouseenter', showCustomCursor);
+    canvas.addEventListener('mouseleave', hideCustomCursor);
+    canvas.addEventListener('mousemove', updateCursorPosition);
+    
+    // Evento global para atualizar posição mesmo durante movimento rápido
+    document.addEventListener('mousemove', (e) => {
+        if (isMouseOverCanvas) {
+            updateCursorPosition(e);
+        }
+    });
+}
+
 /**
  * Obtém o desenho atual
  * @returns {Object|null} Desenho atual
@@ -169,6 +280,9 @@ export async function loadImage() {
         
         canvas.addEventListener('click', handleCanvasClick);
         
+        // Inicializar cursor visual customizado (funciona em todos os navegadores, incluindo Arc)
+        initCursorListeners();
+        
         requestAnimationFrame(() => {
             const containerRect = container.getBoundingClientRect();
             const containerPadding = 1 * 16;
@@ -191,13 +305,15 @@ export async function loadImage() {
                 displayWidth = displayHeight * imageAspectRatio;
             }
             
-            canvas.style.cursor = 'pointer';
             canvas.style.display = 'block';
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
             canvas.style.maxWidth = '100%';
             canvas.style.maxHeight = '100%';
             canvas.style.objectFit = 'contain';
+            
+            // Definir cursor com a cor inicial
+            updateCanvasCursor(getSelectedColor());
             
             // Inicializar botões de download após o canvas estar pronto
             initDownloadButton(canvas, drawing);

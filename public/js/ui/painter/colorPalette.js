@@ -1,5 +1,7 @@
 // Painter - Módulo de paleta de cores
 
+import { updateCanvasCursor } from './canvas.js';
+
 // Paleta de 24 cores para crianças
 export const COLOR_PALETTE = [
     '#FF0000', // Vermelho
@@ -95,6 +97,9 @@ function selectColor(color, element) {
     
     // Adicionar seleção atual
     element.classList.add('selected');
+    
+    // Atualizar cursor do canvas com a nova cor
+    updateCanvasCursor(color);
 }
 
 /**
