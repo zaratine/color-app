@@ -76,7 +76,7 @@ router.get('/proxy-image', async (req, res) => {
                     
                     // Gerar thumbnail
                     console.log(`    [GET /api/proxy-image] Gerando thumbnail a partir da imagem original...`);
-                    const thumbnailBuffer = await generateThumbnail(originalImageBuffer, 200);
+                    const thumbnailBuffer = await generateThumbnail(originalImageBuffer);
                     
                     // Salvar thumbnail no S3 para uso futuro
                     try {
@@ -102,7 +102,7 @@ router.get('/proxy-image', async (req, res) => {
                     res.setHeader('Access-Control-Allow-Origin', '*');
                     res.setHeader('Access-Control-Allow-Methods', 'GET');
                     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-                    res.setHeader('Content-Type', 'image/png');
+                    res.setHeader('Content-Type', 'image/webp');
                     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache por 1 ano
                     
                     // Enviar thumbnail gerado
@@ -138,7 +138,7 @@ router.get('/proxy-image', async (req, res) => {
         // Sempre retornar imagem (não JSON) para evitar ORB
         // Retornar imagem placeholder transparente 1x1
         res.status(500);
-        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Type', 'image/webp');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         

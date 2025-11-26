@@ -6,21 +6,16 @@
  */
 export async function fetchDrawings() {
     try {
-        console.log('🌐 Fazendo requisição para /api/drawings...');
         const response = await fetch('/api/drawings');
-        console.log('🌐 Resposta recebida:', response.status, response.statusText);
         
         if (response.ok) {
             const data = await response.json();
-            console.log('🌐 Dados recebidos:', Object.keys(data), 'categorias');
             return data;
         }
         
-        const errorText = await response.text();
-        console.error('🌐 Erro na resposta:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
     } catch (error) {
-        console.error('🌐 Erro ao carregar desenhos da API:', error);
+        console.error('Erro ao carregar desenhos da API:', error);
         throw error;
     }
 }
@@ -56,7 +51,6 @@ export async function generateDrawing(theme) {
 
         return data;
     } catch (error) {
-        console.error('Erro ao gerar desenho:', error);
         throw error;
     }
 }

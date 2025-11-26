@@ -1,0 +1,136 @@
+/* Estilos de Filtros - Seção de filtros por tags */
+
+.filters-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+}
+
+.filters-header {
+    margin-bottom: 1rem;
+}
+
+.filters-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #4a5568;
+    letter-spacing: 0.3px;
+}
+
+.filters-tags {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 0.5rem;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    color: #4a5568;
+    padding: 0.5rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: auto;
+    margin: 0;
+}
+
+.filter-tag:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+}
+
+.filter-tag.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.filter-tag.selected:hover {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    transform: translateY(-1px);
+}
+
+.filter-count {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.filter-tag.selected .filter-count {
+    opacity: 0.9;
+}
+
+.filter-tag.hidden-filter {
+    display: none;
+}
+
+.filters-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    gap: 1rem;
+}
+
+.filters-result-count {
+    font-size: 0.85rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+.clear-filters-btn {
+    background: transparent;
+    border: 1px solid #e53e3e;
+    color: #e53e3e;
+    padding: 0.4rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.clear-filters-btn:hover {
+    background: #e53e3e;
+    color: white;
+}
+
+.show-all-filters-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: transparent;
+    border: 1px dashed #667eea;
+    color: #667eea;
+    padding: 0.5rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: auto;
+    margin: 0;
+}
+
+.show-all-filters-btn:hover {
+    background: #667eea;
+    color: white;
+    border-style: solid;
+}
+

@@ -1,0 +1,206 @@
+/* Estilos Responsivos - Media queries */
+
+/* Grid responsivo para cards */
+@media (max-width: 1200px) {
+    .card-grid,
+    .categories-grid,
+    .drawings-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .card-grid,
+    .categories-grid,
+    .drawings-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    main.container {
+        padding: 1.5rem 1rem;
+    }
+    
+    main.container > h1,
+    main.container > header h1 {
+        font-size: 1.85rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .intro-text {
+        padding: 1.5rem 1.5rem;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+    }
+    
+    .intro-text p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        text-align: left;
+    }
+    
+    .category-description {
+        margin-bottom: 2rem;
+    }
+    
+    .category-description p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        text-align: left;
+    }
+    
+    .custom-drawing-section {
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 2rem;
+        border-radius: 20px;
+    }
+    
+    .custom-drawing-section .custom-drawing-title {
+        font-size: 1.15rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .categories-divider {
+        margin: 2rem 0 1.5rem 0;
+    }
+    
+    .categories-divider h2 {
+        font-size: 1.25rem;
+    }
+    
+    .theme-input {
+        padding: 0.875rem 1.25rem;
+        font-size: 0.95rem;
+        width: 100%;
+    }
+    
+    .generate-button {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
+        width: 100%;
+        max-width: none;
+    }
+    
+    .paint-container {
+        flex-direction: column;
+    }
+    
+    .color-palette {
+        width: 100%;
+        height: auto;
+        max-height: 50vh;
+    }
+    
+    .card-grid,
+    .categories-grid,
+    .drawings-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+    
+    .card {
+        padding: 0.875rem;
+    }
+    
+    .drawing-header {
+        margin-bottom: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+    
+    #drawing-title {
+        font-size: 1.25rem;
+        text-align: left;
+    }
+    
+    .download-buttons {
+        margin-left: 0;
+        margin-top: 0.75rem;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .download-link {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+    
+    .about-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+    }
+    
+    .about-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .other-categories-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+    }
+    
+    .other-categories-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .breadcrumb {
+        margin-bottom: 1rem;
+    }
+    
+    .breadcrumb li {
+        font-size: 0.85rem;
+    }
+    
+    .breadcrumb-paint {
+        margin-bottom: 0.75rem;
+        padding-left: 0.5rem;
+    }
+    
+    .breadcrumb-paint li {
+        font-size: 0.85rem;
+    }
+    
+    /* Filtros responsivos */
+    .filters-container {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .filters-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .filters-tags {
+        gap: 0.4rem;
+    }
+    
+    .filter-tag {
+        padding: 0.45rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .clear-filters-btn {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 540px) {
+    .card-grid,
+    .categories-grid,
+    .drawings-grid {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
+

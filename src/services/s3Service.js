@@ -341,7 +341,7 @@ async function objectExistsInS3(key) {
  * @returns {Promise<string>} URL pública do thumbnail no S3
  */
 async function uploadThumbnailToS3(thumbnailBuffer, key) {
-    return await _uploadObjectToS3(thumbnailBuffer, key, 'image/png');
+    return await _uploadObjectToS3(thumbnailBuffer, key, 'image/webp');
 }
 
 module.exports = {

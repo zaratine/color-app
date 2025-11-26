@@ -1,37 +1,15 @@
 // UI - Renderização de desenhos de uma categoria
 
 import { getDrawingsInCategory, getDrawingFilename, getDrawingUrl, getThumbnailUrl, getAllCategories } from '../services/drawingsService.js';
-import { getCategoryFromUrl, getPaintUrl, getProxyUrl, isS3Url, getCategoryUrl } from '../utils/urlUtils.js';
+import { getCategoryFromUrl, getPaintUrl, getCategoryUrl } from '../utils/urlUtils.js';
+import { capitalizeWords, removeTrailingNumbers } from '../utils/stringUtils.js';
+import { createCategoryCard, createDrawingCard } from '../components/card.js';
 
 // Estado global para os filtros
 let allDrawingsData = [];
 let selectedFilters = new Set();
 let nounCountMap = new Map();
 let currentCategory = '';
-
-/**
- * Capitaliza a primeira letra de cada palavra em uma string
- * @param {string} str - String a ser capitalizada
- * @returns {string} String com primeira letra de cada palavra em maiúscula
- */
-function capitalizeWords(str) {
-    return str
-        .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-}
-
-/**
- * Remove números ao final de uma string
- * @param {string} str - String a ser processada
- * @returns {string} String sem números ao final
- */
-function removeTrailingNumbers(str) {
-    if (!str) return '';
-    // Remove espaços/hífens/underscores seguidos de números no final
-    return str.replace(/[\s_-]+\d+$/, '');
-}
 
 /**
  * Remove artigos do início de um substantivo
@@ -110,7 +88,7 @@ function renderFilters(nounCount) {
     
     // Ordena os nouns por contagem (decrescente) e depois alfabeticamente
     const sortedNouns = [...nounCount.entries()]
-        .filter(([noun, count]) => count >= 2) // Só mostra nouns que aparecem em pelo menos 2 desenhos
+        .filter(([noun, count]) => count >= 1) // Mostra todos os nouns extraídos
         .sort((a, b) => {
             if (b[1] !== a[1]) return b[1] - a[1]; // Por contagem
             return a[0].localeCompare(b[0]); // Alfabético
@@ -299,31 +277,18 @@ function renderDrawingsGrid(drawings) {
         const filename = getDrawingFilename(drawing);
         const imageUrl = getDrawingUrl(drawing);
         
-        // Obter URL do thumbnail
-        let thumbnailPath = getThumbnailUrl(drawing, currentCategory);
-        
-        const isS3Thumbnail = thumbnailPath && thumbnailPath.includes('.s3.') && thumbnailPath.includes('.amazonaws.com');
-        const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3E?%3C/text%3E%3C/svg%3E';
-        
         let nameWithoutExt = filename.replace(/\.[^.]+$/i, '').replace(/_/g, ' ');
         nameWithoutExt = removeTrailingNumbers(nameWithoutExt);
         const drawingName = capitalizeWords(nameWithoutExt);
 
-        const drawingCard = document.createElement('div');
-        drawingCard.className = 'card';
-        drawingCard.onclick = () => {
-            window.location.href = getPaintUrl(currentCategory, filename, imageUrl);
-        };
-
-        const onErrorHandler = isS3Thumbnail 
-            ? `this.onerror=null; this.src='${fallbackUrl}';`
-            : `this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3E?%3C/text%3E%3C/svg%3E';`;
-
-        drawingCard.innerHTML = `
-            <img src="${thumbnailPath}" alt="${drawingName}" class="card-thumbnail"
-                 onerror="${onErrorHandler}">
-            <h2 class="card-name">${drawingName}</h2>
-        `;
+        const drawingCard = createDrawingCard(
+            drawing, 
+            drawingName, 
+            currentCategory, 
+            () => {
+                window.location.href = getPaintUrl(currentCategory, filename, imageUrl);
+            }
+        );
 
         grid.appendChild(drawingCard);
     });
@@ -388,9 +353,9 @@ export async function loadDrawings() {
 
 /**
  * Carrega e renderiza 5 categorias aleatórias (excluindo a categoria atual)
- * @param {string} currentCategory - Nome da categoria atual
+ * @param {string} currentCat - Nome da categoria atual
  */
-async function loadOtherCategories(currentCategory) {
+async function loadOtherCategories(currentCat) {
     const grid = document.getElementById('other-categories-grid');
     if (!grid) return;
 
@@ -399,7 +364,7 @@ async function loadOtherCategories(currentCategory) {
         
         // Filtrar categorias que têm desenhos e excluir a categoria atual
         const availableCategories = allCategories.filter(
-            cat => cat.drawings.length > 0 && cat.name !== currentCategory
+            cat => cat.drawings.length > 0 && cat.name !== currentCat
         );
         
         if (availableCategories.length === 0) {
@@ -411,40 +376,14 @@ async function loadOtherCategories(currentCategory) {
             return;
         }
         
-        // Selecionar 3 categorias aleatórias
+        // Selecionar 5 categorias aleatórias
         const shuffled = availableCategories.sort(() => 0.5 - Math.random());
         const randomCategories = shuffled.slice(0, 5);
         
         grid.innerHTML = '';
         
         for (const category of randomCategories) {
-            const firstDrawing = category.drawings[0];
-            
-            // Obter URL do thumbnail e URL original da imagem
-            const thumbnailPath = getThumbnailUrl(firstDrawing, category.name);
-            const imageUrl = getDrawingUrl(firstDrawing);
-            
-            // Se for URL do S3 direta, tentar carregar direto. Se der 404, fazer fallback para /api/thumbnail
-            const isS3Thumbnail = thumbnailPath && thumbnailPath.includes('.s3.') && thumbnailPath.includes('.amazonaws.com');
-            const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : null;
-            
-            const categoryCard = document.createElement('div');
-            categoryCard.className = 'card';
-            categoryCard.onclick = () => {
-                window.location.href = getCategoryUrl(category.name);
-            };
-
-            // Se for URL do S3, fazer fallback para API quando der erro. Caso contrário, esconder imagem
-            const onErrorHandler = isS3Thumbnail && fallbackUrl
-                ? `this.onerror=null; this.src='${fallbackUrl}';`
-                : `this.style.display='none';`;
-
-            categoryCard.innerHTML = `
-                <img src="${thumbnailPath}" alt="${category.displayName}" class="card-thumbnail" 
-                     onerror="${onErrorHandler}">
-                <h2 class="card-name">${category.displayName}</h2>
-            `;
-
+            const categoryCard = createCategoryCard(category);
             grid.appendChild(categoryCard);
         }
     } catch (error) {

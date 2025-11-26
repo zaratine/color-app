@@ -11,7 +11,7 @@ const { uploadToS3, uploadThumbnailToS3: uploadThumbnailToS3Service, objectExist
  * @param {number} width - Largura do thumbnail (padrão: 200px)
  * @returns {Promise<Buffer>} Buffer do thumbnail gerado
  */
-async function generateThumbnail(imageBuffer, width = 200) {
+async function generateThumbnail(imageBuffer, width = 168) {
     try {
         console.log(`    [generateThumbnail] Gerando thumbnail com largura ${width}px...`);
         const thumbnailBuffer = await sharp(imageBuffer)
@@ -20,10 +20,9 @@ async function generateThumbnail(imageBuffer, width = 200) {
                 fit: 'inside',
                 kernel: 'lanczos3' // Algoritmo de alta qualidade para redimensionamento
             })
-            .png({
-                compressionLevel: 9, // Máxima compressão
-                quality: 100, // Máxima qualidade
-                palette: false // Não usar paleta para manter qualidade
+            .webp({
+                quality: 80,
+                effort: 4
             })
             .toBuffer();
         
@@ -146,7 +145,7 @@ async function generateAndSaveThumbnail(imageBuffer, originalFilename, originalK
         console.log('    [generateAndSaveThumbnail] Iniciando geração e salvamento do thumbnail...');
         
         // Gerar thumbnail
-        const thumbnailBuffer = await generateThumbnail(imageBuffer, 200);
+        const thumbnailBuffer = await generateThumbnail(imageBuffer);
         
         const result = {
             url: null,
@@ -206,7 +205,7 @@ async function generateThumbnailFromUrl(originalImageUrl) {
         const { Body, ContentType } = await getObjectFromS3(originalKey);
         
         // Gerar thumbnail
-        const thumbnailBuffer = await generateThumbnail(Body, 200);
+        const thumbnailBuffer = await generateThumbnail(Body);
         
         // Tentar salvar thumbnail no S3 (não crítico se falhar)
         const thumbnailKey = getThumbnailKey(originalKey);
