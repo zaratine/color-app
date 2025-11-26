@@ -2,7 +2,8 @@
 <nav class="breadcrumb<%= typeof breadcrumbClass !== 'undefined' ? ' ' + breadcrumbClass : '' %>" aria-label="Breadcrumb">
     <ol>
         <% breadcrumb.forEach(function(item, index) { %>
-            <% if (index === breadcrumb.length - 1) { %>
+            <% const isCurrent = typeof item.current !== 'undefined' ? item.current : index === breadcrumb.length - 1; %>
+            <% if (isCurrent) { %>
                 <li aria-current="page"><%= item.name %></li>
             <% } else { %>
                 <li><a href="<%= item.url || '#' %>"><%= item.name %></a></li>

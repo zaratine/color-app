@@ -8,16 +8,15 @@
         { name: 'Home', url: '/' },
         { 
             name: categoryName, 
-            url: categorySlug ? `/en/${encodeURIComponent(categorySlug)}` : '#' 
-        },
-        { name: drawingName, url: '#' }
+            url: categorySlug ? `/en/${encodeURIComponent(categorySlug)}` : '#',
+            current: false
+        }
     ];
 %>
 <div class="paint-container">
     <aside class="color-palette">
         <header>
             <a href="#" id="back-link" class="back-link">← Back</a>
-            <%- include('../partials/breadcrumb', { breadcrumb: breadcrumbItems, breadcrumbClass: 'breadcrumb-paint' }) %>
             <h2>Colors</h2>
         </header>
         <div id="color-grid" class="color-grid">
@@ -25,12 +24,35 @@
         </div>
     </aside>
     <main class="drawing-area">
+        <div class="custom-drawing-section paint-custom-drawing">
+            <form id="custom-drawing-form" class="custom-drawing-form">
+                <div class="form-row">
+                    <input
+                        type="text"
+                        id="drawing-theme"
+                        placeholder="✨ Describe what you want to paint and AI will create it (e.g., a cat, a princess, a car...)"
+                        required
+                        class="theme-input"
+                    >
+                    <button type="submit" class="generate-button" id="generate-btn">
+                        ⚡ Generate with AI
+                    </button>
+                </div>
+            </form>
+            <div id="generation-overlay" class="generation-overlay">
+                <div class="overlay-spinner"></div>
+                <div class="overlay-message">Generating your drawing. This can take up to 15 seconds.</div>
+            </div>
+        </div>
         <div class="drawing-header">
-            <h1 id="drawing-title"><%= drawingName %> Coloring Page</h1>
+            <div class="breadcrumb-wrapper">
+                <%- include('../partials/breadcrumb', { breadcrumb: breadcrumbItems, breadcrumbClass: 'breadcrumb-paint' }) %>
+            </div>
             <div class="download-buttons">
                 <a href="javascript:void(0)" id="download-link" class="download-link" title="Download colored image">⬇ Download Colored</a>
                 <a href="javascript:void(0)" id="download-blank-link" class="download-link" title="Download blank image">⬇ Download Blank</a>
             </div>
+            <h1 id="drawing-title"><%= drawingName %> Coloring Page</h1>
         </div>
         <div id="canvas-container" class="canvas-container">
             <!-- Canvas será criado aqui -->

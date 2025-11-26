@@ -46,7 +46,7 @@ export async function loadCategories() {
             const fallbackUrl = imageUrl ? `/api/thumbnail?url=${encodeURIComponent(imageUrl)}` : null;
             
             const categoryCard = document.createElement('div');
-            categoryCard.className = 'category-card';
+            categoryCard.className = 'card';
             categoryCard.onclick = () => {
                 window.location.href = getCategoryUrl(category.name);
             };
@@ -57,9 +57,9 @@ export async function loadCategories() {
                 : `this.style.display='none';`;
 
             categoryCard.innerHTML = `
-                <img src="${thumbnailPath}" alt="${category.displayName}" class="category-thumbnail" 
+                <img src="${thumbnailPath}" alt="${category.displayName}" class="card-thumbnail" 
                      onerror="${onErrorHandler}">
-                <h2 class="category-name">${category.displayName}</h2>
+                <h2 class="card-name">${category.displayName}</h2>
             `;
 
             grid.appendChild(categoryCard);

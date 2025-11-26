@@ -8,6 +8,43 @@ const CSV_BACKUP = path.join(__dirname, '..', 'drawings.csv.backup');
 const CONCURRENT_REQUESTS = 30;
 
 /**
+ * Divide uma linha CSV em colunas respeitando aspas e vírgulas internas
+ * @param {string} line
+ * @returns {Array<string>}
+ */
+function parseCSVLine(line) {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                // Aspas duplas escapadas dentro de um campo
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
+        }
+
+        if (char === ',' && !inQuotes) {
+            fields.push(current);
+            current = '';
+            continue;
+        }
+
+        current += char;
+    }
+
+    fields.push(current);
+    return fields.map(field => field.trim());
+}
+
+/**
  * Lê e parseia o arquivo CSV
  * @returns {Array<{category: string, description: string, url: string, lineIndex: number}>}
  */
@@ -20,12 +57,11 @@ function readCSV() {
     
     const rows = [];
     dataLines.forEach((line, index) => {
-        // Parsear CSV simples (assumindo que não há vírgulas dentro das strings)
-        const parts = line.split(',');
+        const parts = parseCSVLine(line);
         if (parts.length >= 2) {
-            const category = parts[0].trim();
-            const description = parts[1].trim();
-            const url = parts.length >= 3 ? parts[2].trim() : '';
+            const category = parts[0];
+            const description = parts[1];
+            const url = parts.length >= 3 ? parts[2] : '';
             
             rows.push({
                 category,
@@ -44,13 +80,31 @@ function readCSV() {
  * Escreve o CSV atualizado
  * @param {Array} rows - Array de objetos com category, description, url
  */
+/**
+ * Formata um campo para CSV, escapando aspas e envolvendo em aspas quando necessário
+ * @param {string} value
+ * @returns {string}
+ */
+function formatCSVField(value) {
+    if (value == null) return '';
+    const field = String(value);
+    const needsQuotes = field.includes(',') || field.includes('"') || field.includes('\n');
+
+    if (!needsQuotes) {
+        return field;
+    }
+
+    const escaped = field.replace(/"/g, '""');
+    return `"${escaped}"`;
+}
+
 function writeCSV(rows) {
     const lines = ['Categoria,Descrição do desenho,URL'];
     
     rows.forEach(row => {
-        const category = row.category || '';
-        const description = row.description || '';
-        const url = row.url || '';
+        const category = formatCSVField(row.category);
+        const description = formatCSVField(row.description);
+        const url = formatCSVField(row.url);
         lines.push(`${category},${description},${url}`);
     });
     

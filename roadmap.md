@@ -1,5 +1,6 @@
 SEO
 - Fazer teste com Search Console
+- Fazer o sitemap dos sitemapsna
 - Implementar compatibilidade com dispositivos móveis
 - Implementar melhorias do PageSpeed para dispositivos móveis
 - Implementar og:image em todas as páginas -> <meta property="og:image" content="[url_image_here]">
@@ -16,7 +17,10 @@ I18N
 - Traduzir para inglês, português, espanhol, etc
 
 FEATURES
+- Colocar filtros nas categorias
+- Colocar prompt para criação AI na tela de desenhos
 - Busca 
+- Permitir criança falar o que quer desenhar
 - Criar cluster dentro das categorias (ex: estações - e colocar textos de atividades sugeridas para pais e professores com base nisso)
 
 BUGS

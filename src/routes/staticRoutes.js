@@ -151,7 +151,7 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
             return res.render('layouts/main', {
                 page: 'pages/paint',
                 bodyClass: 'paint-page',
-                scripts: ['/js/ui/painter.js', '/js/app.js'],
+            scripts: ['/js/ui/custom-drawing.js', '/js/ui/painter.js', '/js/app.js'],
                 drawingData: { friendlyName: 'Drawing', category: { friendlyName: 'Category', slug: categorySlug }, slug: drawingSlug },
                 meta: generateMetaTags({
                     title: 'Free Coloring Pages for Kids – Print or Color Online',
@@ -173,7 +173,7 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
         res.render('layouts/main', {
             page: 'pages/paint',
             bodyClass: 'paint-page',
-            scripts: ['/js/ui/painter.js', '/js/app.js'],
+            scripts: ['/js/ui/custom-drawing.js', '/js/ui/painter.js', '/js/app.js'],
             drawingData,
             meta
         });
@@ -186,7 +186,7 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
         res.render('layouts/main', {
             page: 'pages/paint',
             bodyClass: 'paint-page',
-            scripts: ['/js/ui/painter.js', '/js/app.js'],
+            scripts: ['/js/ui/custom-drawing.js', '/js/ui/painter.js', '/js/app.js'],
             drawingData: { friendlyName: 'Drawing', category: { friendlyName: 'Category', slug: '' }, slug: '' },
             meta: generateMetaTags({
                 title: 'Free Coloring Pages for Kids – Print or Color Online',
