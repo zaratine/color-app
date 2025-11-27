@@ -34,6 +34,37 @@ function normalizeCategory(category) {
 }
 
 /**
+ * Detecta se um slug tem formato antigo (com timestamp)
+ * @param {string} slug - Slug a verificar (ex: "baker_decorating_cake_1763922631529")
+ * @returns {boolean} true se o slug tem formato antigo
+ */
+function hasOldSlugFormat(slug) {
+    if (!slug) return false;
+    // Verifica se termina com underscore ou hífen seguido de números (timestamp)
+    return /[_-]\d+$/.test(slug);
+}
+
+/**
+ * Normaliza um slug antigo removendo o timestamp e convertendo para o formato correto
+ * @param {string} slug - Slug antigo (ex: "baker_decorating_cake_1763922631529")
+ * @returns {string} Slug normalizado (ex: "baker-decorating-cake")
+ */
+function normalizeOldSlug(slug) {
+    if (!slug) return '';
+    
+    // Remover números ao final (timestamp) - mesma lógica de filenameToSlug
+    let normalized = slug.replace(/[\s_-]+\d+$/, '');
+    
+    // Substituir underscores por hífens e converter para minúsculas
+    normalized = normalized
+        .replace(/_/g, '-')
+        .toLowerCase()
+        .trim();
+    
+    return normalized;
+}
+
+/**
  * Constrói mapeamento dinâmico de slugs para desenhos
  * @param {Object} drawingsDatabase - Banco de dados de desenhos (formato: {category: {drawings: [...]}})
  * @returns {Object} Mapeamento {category: {slug: {category, filename, url}}}
@@ -121,6 +152,8 @@ module.exports = {
     filenameToSlug,
     normalizeCategory,
     buildSlugMapping,
-    getDrawingBySlug
+    getDrawingBySlug,
+    hasOldSlugFormat,
+    normalizeOldSlug
 };
 

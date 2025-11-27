@@ -10,7 +10,7 @@ const {
     generateDrawingMetaTags,
     generateMetaTags
 } = require('../utils/pageData');
-const { filenameToSlug, normalizeCategory } = require('../utils/urlMapping');
+const { filenameToSlug, normalizeCategory, hasOldSlugFormat, normalizeOldSlug } = require('../utils/urlMapping');
 
 const router = express.Router();
 
@@ -137,7 +137,25 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
     
     try {
         const categorySlug = decodeURIComponent(req.params.category);
-        const drawingSlug = decodeURIComponent(req.params.drawing);
+        let drawingSlug = decodeURIComponent(req.params.drawing);
+
+        // Verificar se o slug tem formato antigo (com timestamp) e fazer redirect 301
+        if (hasOldSlugFormat(drawingSlug)) {
+            const normalizedSlug = normalizeOldSlug(drawingSlug);
+            const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+            const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+            const baseUrl = `${protocol}://${host}`;
+            
+            // Construir URL corrigida
+            const correctedUrl = `${baseUrl}/en/${encodeURIComponent(categorySlug)}/${encodeURIComponent(normalizedSlug)}`;
+            
+            // Preservar query strings se houver
+            const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+            const redirectUrl = correctedUrl + queryString;
+            
+            console.log(`Redirect 301: ${req.url} -> ${redirectUrl}`);
+            return res.redirect(301, redirectUrl);
+        }
 
         // Buscar dados do desenho
         const drawingData = await getDrawingPageData(categorySlug, drawingSlug);
