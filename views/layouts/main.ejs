@@ -8,6 +8,8 @@
     
     <%- include('../partials/meta-tags', { meta: typeof meta !== 'undefined' ? meta : {} }) %>
     
+    <%- include('../partials/structured-data', { structuredData: typeof structuredData !== 'undefined' ? structuredData : [] }) %>
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/styles/main.css">
     <!-- Compromise.js for NLP noun extraction -->

@@ -1,0 +1,12 @@
+<% 
+    // Verifica se há schemas JSON-LD para renderizar
+    const schemas = typeof structuredData !== 'undefined' ? structuredData : [];
+%>
+<% if (schemas && Array.isArray(schemas) && schemas.length > 0) { %>
+    <% schemas.forEach(function(schema) { %>
+<script type="application/ld+json">
+<%- JSON.stringify(schema, null, 2) %>
+</script>
+    <% }); %>
+<% } %>
+

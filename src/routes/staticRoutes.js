@@ -8,7 +8,10 @@ const {
     getDrawingPageData, 
     generateCategoryMetaTags, 
     generateDrawingMetaTags,
-    generateMetaTags
+    generateMetaTags,
+    generateCategoryJsonLd,
+    generateDrawingJsonLd,
+    generateHomeJsonLd
 } = require('../utils/pageData');
 const { filenameToSlug, normalizeCategory, hasOldSlugFormat, normalizeOldSlug } = require('../utils/urlMapping');
 
@@ -175,7 +178,8 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
                     title: 'Free Coloring Pages for Kids – Print or Color Online',
                     description: 'Free coloring pages for kids! Print or Color Online.',
                     url: `${baseUrl}/en/${encodeURIComponent(categorySlug)}/${encodeURIComponent(drawingSlug)}`
-                })
+                }),
+                structuredData: []
             });
         }
         
@@ -187,13 +191,17 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
         // Gerar meta tags
         const meta = generateDrawingMetaTags(drawingData, baseUrl);
         
+        // Gerar JSON-LD structured data
+        const structuredData = generateDrawingJsonLd(drawingData, baseUrl);
+        
         // Renderizar template EJS
         res.render('layouts/main', {
             page: 'pages/paint',
             bodyClass: 'paint-page',
             scripts: ['/js/ui/custom-drawing.js', '/js/ui/painter.js', '/js/app.js'],
             drawingData,
-            meta
+            meta,
+            structuredData
         });
     } catch (error) {
         console.error('Erro ao renderizar página de desenho:', error);
@@ -210,7 +218,8 @@ router.get('/en/:category/:drawing', async (req, res, next) => {
                 title: 'Free Coloring Pages for Kids – Print or Color Online',
                 description: 'Free coloring pages for kids! Print or Color Online.',
                 url: `${baseUrl}/paint`
-            })
+            }),
+            structuredData: []
         });
     }
 });
@@ -224,15 +233,18 @@ router.get('/en/:category', async (req, res, next) => {
     try {
         const categorySlug = decodeURIComponent(req.params.category);
         
-        // Buscar dados da categoria
+        // Buscar database e dados da categoria
+        const database = await getDrawingsDatabase();
         const categoryData = await getCategoryPageData(categorySlug);
+        
+        // Gerar URL base
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
+        const baseUrl = `${protocol}://${host}`;
         
         // Se não encontrar a categoria, renderizar página genérica
         if (!categoryData) {
             console.warn(`Categoria não encontrada: ${categorySlug}`);
-            const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
-            const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
-            const baseUrl = `${protocol}://${host}`;
             return res.render('layouts/main', {
                 page: 'pages/category',
                 scripts: ['/js/ui/drawings.js', '/js/app.js'],
@@ -241,24 +253,24 @@ router.get('/en/:category', async (req, res, next) => {
                     title: 'Free Coloring Pages for Kids – Print or Color Online',
                     description: 'Free coloring pages for kids! Print or Color Online.',
                     url: `${baseUrl}/en/${encodeURIComponent(categorySlug)}`
-                })
+                }),
+                structuredData: []
             });
         }
         
-        // Gerar URL base
-        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
-        const host = req.get('host') || req.get('x-forwarded-host') || 'localhost:8000';
-        const baseUrl = `${protocol}://${host}`;
+        // Gerar meta tags (passando database para buscar primeira imagem)
+        const meta = await generateCategoryMetaTags(categoryData, baseUrl, database);
         
-        // Gerar meta tags
-        const meta = generateCategoryMetaTags(categoryData, baseUrl);
+        // Gerar JSON-LD structured data
+        const structuredData = generateCategoryJsonLd(categoryData, baseUrl, database);
         
         // Renderizar template EJS
         res.render('layouts/main', {
             page: 'pages/category',
             scripts: ['/js/ui/drawings.js', '/js/app.js'],
             categoryData,
-            meta
+            meta,
+            structuredData
         });
     } catch (error) {
         console.error('Erro ao renderizar página de categoria:', error);
@@ -274,7 +286,8 @@ router.get('/en/:category', async (req, res, next) => {
                 title: 'Free Coloring Pages for Kids – Print or Color Online',
                 description: 'Free coloring pages for kids! Print or Color Online.',
                 url: `${baseUrl}/category`
-            })
+            }),
+            structuredData: []
         });
     }
 });
