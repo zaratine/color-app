@@ -44,6 +44,10 @@
                 <div class="overlay-message">Generating your drawing. This can take up to 15 seconds.</div>
             </div>
         </div>
+        <!-- Mensagem explicativa para mobile -->
+        <div class="mobile-message">
+            📱 The painting feature is only available on tablets and desktops. On mobile, you can view and download the drawings.
+        </div>
         <div class="drawing-header">
             <div class="breadcrumb-wrapper">
                 <%- include('../partials/breadcrumb', { breadcrumb: breadcrumbItems, breadcrumbClass: 'breadcrumb-paint' }) %>
@@ -53,6 +57,10 @@
                 <a href="javascript:void(0)" id="download-blank-link" class="download-link" title="Download blank image">⬇ Download Blank</a>
             </div>
             <h1 id="drawing-title"><%= drawingName %> Coloring Page</h1>
+        </div>
+        <!-- Container para imagem estática em mobile -->
+        <div id="mobile-image-container" class="mobile-image-container">
+            <img id="mobile-image" src="" alt="<%= drawingName %>" />
         </div>
         <div id="canvas-container" class="canvas-container">
             <!-- Canvas será criado aqui -->

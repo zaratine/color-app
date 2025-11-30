@@ -211,6 +211,15 @@ export async function loadImage() {
         return;
     }
 
+    // Detectar se é mobile (largura <= 767px)
+    const isMobile = window.innerWidth <= 767;
+    
+    // Se for mobile, carregar apenas imagem estática
+    if (isMobile) {
+        await loadMobileImage(category, drawingSlug);
+        return;
+    }
+
     // Buscar desenho no banco de dados usando slug e categoria
     drawing = null;
     let imagePath = null;
@@ -342,6 +351,71 @@ export async function loadImage() {
     
     image.src = imagePath;
 }
+
+/**
+ * Carrega imagem estática para mobile
+ * @param {string} category - Categoria do desenho
+ * @param {string} drawingSlug - Slug do desenho
+ */
+async function loadMobileImage(category, drawingSlug) {
+    let imagePath = null;
+    
+    try {
+        drawing = await getDrawingBySlug(drawingSlug, category);
+        
+        if (drawing) {
+            const imageUrl = getDrawingUrl(drawing);
+            if (imageUrl) {
+                imagePath = imageUrl;
+            } else {
+                const filename = typeof drawing === 'string' ? drawing : (drawing.filename || drawing);
+                imagePath = `drawings/${category}/${filename}`;
+            }
+        } else {
+            const imageUrlFromParams = getImageUrlFromUrl();
+            if (imageUrlFromParams) {
+                imagePath = imageUrlFromParams;
+            } else {
+                imagePath = `drawings/${category}/${drawingSlug}`;
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao buscar desenho:', error);
+        const imageUrlFromParams = getImageUrlFromUrl();
+        if (imageUrlFromParams) {
+            imagePath = imageUrlFromParams;
+        } else {
+            imagePath = `drawings/${category}/${drawingSlug}`;
+        }
+    }
+    
+    // Se for URL do S3, usar proxy para evitar problemas de CORS
+    if (isS3Url(imagePath)) {
+        imagePath = getProxyUrl(imagePath);
+    }
+    
+    const mobileImageContainer = document.getElementById('mobile-image-container');
+    const mobileImage = document.getElementById('mobile-image');
+    
+    if (!mobileImageContainer || !mobileImage) {
+        console.error('Elementos mobile não encontrados');
+        return;
+    }
+    
+    mobileImage.onload = function() {
+        // Inicializar botões de download
+        // Para download colored, criar canvas temporário
+        initDownloadButton(null, drawing, mobileImage);
+        initDownloadBlankButton(drawing);
+    };
+    
+    mobileImage.onerror = function() {
+        mobileImageContainer.innerHTML = '<p>Error loading image. Please check if the file exists.</p>';
+    };
+    
+    mobileImage.src = imagePath;
+}
+
 
 /**
  * Função para atualizar link de voltar

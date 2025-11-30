@@ -7,8 +7,19 @@ import { getDrawingUrl, getDrawingFilename } from '../../services/drawingsServic
  * Função para fazer download da imagem pintada
  * @param {HTMLCanvasElement} canvas - Canvas com o desenho pintado
  * @param {Object} drawing - Objeto do desenho atual
+ * @param {HTMLImageElement} imageElement - Elemento de imagem (usado em mobile)
  */
-export function downloadImage(canvas, drawing) {
+export function downloadImage(canvas, drawing, imageElement = null) {
+    // Se não houver canvas mas houver imageElement, criar canvas temporário
+    if (!canvas && imageElement) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imageElement.naturalWidth || imageElement.width;
+        tempCanvas.height = imageElement.naturalHeight || imageElement.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(imageElement, 0, 0);
+        canvas = tempCanvas;
+    }
+    
     if (!canvas) {
         console.error('Canvas não disponível para download');
         return;
@@ -140,8 +151,9 @@ export async function downloadOriginalImage(drawing) {
  * Função para inicializar o botão de download
  * @param {HTMLCanvasElement} canvas - Canvas com o desenho
  * @param {Object} drawing - Objeto do desenho
+ * @param {HTMLImageElement} imageElement - Elemento de imagem (usado em mobile)
  */
-export function initDownloadButton(canvas, drawing) {
+export function initDownloadButton(canvas, drawing, imageElement = null) {
     const downloadLink = document.getElementById('download-link');
     if (downloadLink) {
         // Remover event listeners anteriores
@@ -152,7 +164,7 @@ export function initDownloadButton(canvas, drawing) {
         newDownloadLink.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            downloadImage(canvas, drawing);
+            downloadImage(canvas, drawing, imageElement);
         });
     }
 }
